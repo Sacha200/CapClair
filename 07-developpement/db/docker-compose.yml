@@ -1,0 +1,41 @@
+# ============================================================================
+# CapClair — base de données de développement
+# ----------------------------------------------------------------------------
+# Port hôte 5434, car 5432 et 5433 sont déjà pris sur la machine de dev :
+# 5432 par le PostgreSQL 17 natif (service postgresql-x64-17), 5433 par le
+# conteneur sonarqube-db. Le conteneur reste sur 5432 en interne.
+#
+#   docker compose up -d      démarrer
+#   docker compose down       arrêter (les données survivent)
+#   docker compose down -v    arrêter ET supprimer les données
+# ============================================================================
+
+services:
+  db:
+    image: postgres:17
+    container_name: capclair-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: capclair
+      POSTGRES_PASSWORD: capclair_dev
+      POSTGRES_DB: capclair
+      # Tri correct des accents (é, è, ç) via ICU plutôt qu'une locale système :
+      # l'image Debian ne génère que en_US.UTF-8, et la variante Alpine, basée
+      # sur musl, ne gère pas les locales du tout.
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale-provider=icu --icu-locale=fr-FR"
+    ports:
+      - "5434:5432"
+    volumes:
+      - capclair-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      # Prisma Migrate échoue si l'on attaque la base avant qu'elle accepte
+      # les connexions : ce test rend `up -d` réellement bloquant jusqu'au prêt.
+      test: ["CMD-SHELL", "pg_isready -U capclair -d capclair"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+volumes:
+  capclair-pgdata:
+    name: capclair-pgdata
