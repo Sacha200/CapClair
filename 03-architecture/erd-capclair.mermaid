@@ -1,0 +1,193 @@
+erDiagram
+    %% ============================================================
+    %% CapClair — Modèle relationnel (PostgreSQL, monolithe modulaire)
+    %% Base unique, organisée en 4 domaines logiques + authentification.
+    %% ÉTAPE 1 — Identité & dossier      ✅
+    %% ÉTAPE 2 — Analyse (+ Category)    ✅
+    %% ÉTAPE 3 — Rappels & notifications ✅
+    %% ÉTAPE 4 — Conformité & audit      ✅  (modèle complet)
+    %% ============================================================
+
+    %% ---- Authentification (schéma Auth.js / adaptateur Prisma) ----
+    User {
+        uuid id PK
+        varchar email UK
+        varchar password_hash "credentials provider"
+        varchar name
+        timestamp email_verified
+        varchar image
+        boolean reminder_opt_in "réglage global des rappels (C7)"
+        timestamp last_activity_at "purge 12 mois (D12)"
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    Account {
+        uuid id PK
+        uuid user_id FK
+        varchar provider
+        varchar provider_account_id
+        varchar type
+        timestamp created_at
+    }
+
+    Session {
+        uuid id PK
+        uuid user_id FK
+        varchar session_token UK
+        timestamp expires
+    }
+
+    VerificationToken {
+        varchar identifier
+        varchar token UK
+        timestamp expires
+    }
+
+    %% ---- Dossier & document importé ----
+    CaseFile {
+        uuid id PK
+        uuid user_id FK
+        enum organisme "CAF | CPAM | FRANCE_TRAVAIL"
+        varchar title
+        enum status "A_ANALYSER | A_FAIRE | EN_ATTENTE_REPONSE | TERMINE (D9)"
+        enum analysis_status "EN_ATTENTE | EN_COURS | TERMINEE | ECHEC (D8)"
+        timestamp main_deadline "calculée serveur (D7)"
+        enum main_deadline_type "EXPLICITE | RELATIVE"
+        text main_deadline_source_excerpt
+        enum main_deadline_confidence "FAIBLE | MOYEN | ELEVE (D10)"
+        text summary
+        timestamp last_activity_at
+        timestamp created_at
+        timestamp updated_at
+        timestamp deleted_at "suppression douce"
+    }
+
+    Document {
+        uuid id PK
+        uuid case_file_id FK
+        varchar filename
+        varchar mime_type
+        int size_bytes
+        varchar storage_path
+        text extracted_text "pas d'appel IA si < 100 car."
+        timestamp created_at
+    }
+
+    %% ---- Domaine Analyse ----
+    Category {
+        uuid id PK
+        varchar code UK "ensemble fermé, seedé (D14) : REFERENCE | MONTANT | DATE | IDENTITE | CONTACT | AUTRE"
+        varchar label "libellé affiché (FR)"
+        varchar label_en "libellé i18n (EN)"
+        text description
+        varchar icon "nom d'icône"
+        varchar color "couleur / token"
+        int display_order
+        boolean is_active
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    ExtractedInformation {
+        uuid id PK
+        uuid case_file_id FK
+        uuid category_id FK "→ Category"
+        varchar label
+        varchar value
+        text source_excerpt "extrait littéral du courrier"
+        float confidence_score "stocké, jamais affiché brut"
+        enum confidence_level "FAIBLE | MOYEN | ELEVE (D10)"
+        timestamp created_at
+    }
+
+    ActionItem {
+        uuid id PK
+        uuid case_file_id FK
+        varchar title
+        text source_excerpt
+        boolean done
+        timestamp done_at
+        int position
+        timestamp due_date "calculée serveur (D7)"
+        enum due_date_type "EXPLICITE | RELATIVE"
+        text due_date_source_excerpt
+        enum due_date_confidence "FAIBLE | MOYEN | ELEVE"
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    RequiredDocument {
+        uuid id PK
+        uuid case_file_id FK
+        varchar name
+        text source_excerpt
+        boolean provided
+        timestamp created_at
+    }
+
+    ResponseDraft {
+        uuid id PK
+        uuid case_file_id FK "UK — un seul brouillon par dossier"
+        text content "aucune affirmation hors dossier (I-8)"
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    %% ---- Domaine Rappels & notifications ----
+    Reminder {
+        uuid id PK
+        uuid case_file_id FK
+        enum reminder_type "J_MOINS_7 | J_MOINS_1 | JOUR_J"
+        enum channel "EMAIL | IN_APP"
+        enum status "EN_ATTENTE | ENVOYE | ANNULE"
+        timestamp scheduled_for
+        timestamp sent_at
+        timestamp created_at
+    }
+
+    Notification {
+        uuid id PK
+        uuid user_id FK
+        uuid case_file_id FK "nullable — SET NULL si dossier supprimé"
+        enum type "ANALYSE_TERMINEE | ANALYSE_ECHEC | RAPPEL | SYSTEME"
+        varchar title
+        text body
+        boolean read
+        timestamp created_at
+    }
+
+    %% ---- Domaine Conformité & audit ----
+    ConsentLog {
+        uuid id PK
+        uuid user_id FK "nullable — SET NULL, trace anonymisée conservée"
+        uuid case_file_id "nullable"
+        enum consent_type "ANALYSE_IA | CGU"
+        boolean granted
+        timestamp created_at "immuable — preuve (US-3.1)"
+    }
+
+    AuditEvent {
+        uuid id PK
+        uuid user_id FK "nullable — SET NULL"
+        uuid case_file_id FK "nullable — SET NULL"
+        varchar event_type
+        jsonb metadata "jamais de contenu sensible (US-8.2)"
+        timestamp created_at "append-only (réserve C9)"
+    }
+
+    User ||--o{ Account : "a"
+    User ||--o{ Session : "a"
+    User ||--o{ CaseFile : "possède"
+    CaseFile ||--o{ Document : "contient"
+    Category ||--o{ ExtractedInformation : "classe"
+    CaseFile ||--o{ ExtractedInformation : "extrait"
+    CaseFile ||--o{ ActionItem : "requiert"
+    CaseFile ||--o{ RequiredDocument : "réclame"
+    CaseFile ||--|| ResponseDraft : "propose"
+    CaseFile ||--o{ Reminder : "planifie"
+    User ||--o{ Notification : "reçoit"
+    CaseFile ||--o{ Notification : "concerne"
+    User ||--o{ ConsentLog : "consent"
+    User ||--o{ AuditEvent : "génère"
+    CaseFile ||--o{ AuditEvent : "trace"

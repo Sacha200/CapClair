@@ -1,0 +1,442 @@
+[
+  {
+    "id": "CAF-01",
+    "fichier": "CAF/CAF-01.pdf",
+    "organisme_attendu": "CAF",
+    "type_courrier_attendu": "Demande de justificatifs",
+    "date_courrier": "3 juillet 2026",
+    "reference_personne": "N° allocataire 0847213C",
+    "actions_attendues": [
+      {
+        "titre": "Envoyer le justificatif de domicile et l'avis d'imposition",
+        "source_excerpt": "un justificatif de domicile de moins de trois mois et votre avis d'imposition 2025 sur les revenus 2024"
+      }
+    ],
+    "justificatifs_attendus": [
+      {
+        "nom": "Justificatif de domicile de moins de 3 mois",
+        "source_excerpt": "un justificatif de domicile de moins de trois mois"
+      },
+      {
+        "nom": "Avis d'imposition 2025 sur les revenus 2024",
+        "source_excerpt": "votre avis d'imposition 2025 sur les revenus 2024"
+      }
+    ],
+    "echeance": {
+      "type": "relative",
+      "delai_texte": "30 jours à compter de la réception du présent courrier",
+      "date_calculee": "2026-08-02",
+      "source_excerpt": "dans un délai de 30 jours à compter de la réception du présent courrier"
+    },
+    "montants": [],
+    "avertissements": [
+      "Suspension possible du versement du RSA en cas de non-réponse"
+    ]
+  },
+  {
+    "id": "CAF-02",
+    "fichier": "CAF/CAF-02.pdf",
+    "organisme_attendu": "CAF",
+    "type_courrier_attendu": "Déclaration trimestrielle à compléter",
+    "date_courrier": "15 juin 2026",
+    "reference_personne": "N° allocataire 1122334D",
+    "actions_attendues": [
+      {
+        "titre": "Déclarer les ressources trimestrielles sur l'espace personnel",
+        "source_excerpt": "cette déclaration doit être effectuée avant le 5 juillet 2026 depuis votre espace personnel sur caf.fr"
+      }
+    ],
+    "justificatifs_attendus": [
+      {
+        "nom": "Bulletins de salaire d'avril, mai et juin 2026",
+        "source_excerpt": "vos bulletins de salaire de cette période"
+      }
+    ],
+    "echeance": {
+      "type": "explicite",
+      "date_calculee": "2026-07-05",
+      "source_excerpt": "cette déclaration doit être effectuée avant le 5 juillet 2026"
+    },
+    "montants": [
+      {
+        "libelle": "Prime d'activité mensuelle actuelle",
+        "valeur": "297,50 €"
+      }
+    ],
+    "avertissements": [
+      "Interruption du versement en l'absence de déclaration"
+    ]
+  },
+  {
+    "id": "CAF-03",
+    "fichier": "CAF/CAF-03.pdf",
+    "organisme_attendu": "CAF",
+    "type_courrier_attendu": "Notification d'un trop-perçu",
+    "date_courrier": "20 juin 2026",
+    "reference_personne": "N° allocataire 0993456E",
+    "actions_attendues": [
+      {
+        "titre": "Rembourser le trop-perçu ou demander un échéancier",
+        "source_excerpt": "Cette somme doit nous être remboursée avant le 20 septembre 2026"
+      }
+    ],
+    "justificatifs_attendus": [
+      {
+        "nom": "Relevé d'identité bancaire (RIB), si demande d'échéancier",
+        "source_excerpt": "sur présentation d'un relevé d'identité bancaire (RIB)"
+      }
+    ],
+    "echeance": {
+      "type": "explicite",
+      "date_calculee": "2026-09-20",
+      "source_excerpt": "Cette somme doit nous être remboursée avant le 20 septembre 2026"
+    },
+    "montants": [
+      {
+        "libelle": "Trop-perçu APL",
+        "valeur": "342,18 €"
+      }
+    ],
+    "avertissements": [
+      "Prélèvement possible sur les prochaines prestations"
+    ]
+  },
+  {
+    "id": "CAF-04",
+    "fichier": "CAF/CAF-04.pdf",
+    "organisme_attendu": "CAF",
+    "type_courrier_attendu": "Changement de situation à déclarer",
+    "date_courrier": "25 juin 2026",
+    "reference_personne": "N° allocataire 1345678F",
+    "actions_attendues": [
+      {
+        "titre": "Déclarer le changement de situation familiale en ligne",
+        "source_excerpt": "nous vous invitons à déclarer ce changement de situation familiale dans un délai d'un mois"
+      }
+    ],
+    "justificatifs_attendus": [
+      {
+        "nom": "Copie de l'acte de naissance de l'enfant",
+        "source_excerpt": "une copie de l'acte de naissance de l'enfant concerné"
+      }
+    ],
+    "echeance": {
+      "type": "relative",
+      "delai_texte": "un mois à compter de la réception du présent courrier",
+      "date_calculee": "2026-07-25",
+      "source_excerpt": "dans un délai d'un mois à compter de la réception du présent courrier"
+    },
+    "montants": [],
+    "avertissements": [
+      "Recalcul rétroactif possible des prestations en l'absence de déclaration"
+    ]
+  },
+  {
+    "id": "CAF-05",
+    "fichier": "CAF/CAF-05.pdf",
+    "organisme_attendu": "CAF",
+    "type_courrier_attendu": "Rappel avant suspension",
+    "date_courrier": "1 juillet 2026",
+    "reference_personne": "N° allocataire 0765432G",
+    "actions_attendues": [
+      {
+        "titre": "Régulariser le dossier en contactant la CAF",
+        "source_excerpt": "Nous vous invitons à vous rapprocher de nos services dans les meilleurs délais"
+      }
+    ],
+    "justificatifs_attendus": [],
+    "echeance": {
+      "type": "relative",
+      "delai_texte": "15 jours à compter de la réception du présent courrier",
+      "date_calculee": "2026-07-16",
+      "source_excerpt": "dans un délai de 15 jours à compter de la réception du présent courrier"
+    },
+    "montants": [],
+    "avertissements": [
+      "Suspension du versement des allocations en l'absence de régularisation"
+    ]
+  },
+  {
+    "id": "CPAM-01",
+    "fichier": "CPAM/CPAM-01.pdf",
+    "organisme_attendu": "CPAM",
+    "type_courrier_attendu": "Document manquant",
+    "date_courrier": "5 juin 2026",
+    "reference_personne": "N° Sécurité sociale 1 85 07 78 123 456 78",
+    "actions_attendues": [
+      {
+        "titre": "Transmettre le devis dentaire détaillé",
+        "source_excerpt": "Merci de nous transmettre ce document avant le 5 août 2026"
+      }
+    ],
+    "justificatifs_attendus": [
+      {
+        "nom": "Devis dentaire détaillé du chirurgien-dentiste",
+        "source_excerpt": "il manque le devis détaillé établi par votre chirurgien-dentiste"
+      }
+    ],
+    "echeance": {
+      "type": "explicite",
+      "date_calculee": "2026-08-05",
+      "source_excerpt": "Merci de nous transmettre ce document avant le 5 août 2026"
+    },
+    "montants": [],
+    "avertissements": [
+      "Traitement du remboursement bloqué sans ce document"
+    ]
+  },
+  {
+    "id": "CPAM-02",
+    "fichier": "CPAM/CPAM-02.pdf",
+    "organisme_attendu": "CPAM",
+    "type_courrier_attendu": "Demande de feuille de soins",
+    "date_courrier": "10 juin 2026",
+    "reference_personne": "N° Sécurité sociale 2 90 03 45 678 901 23",
+    "actions_attendues": [
+      {
+        "titre": "Demander un duplicata de la feuille de soins au médecin",
+        "source_excerpt": "merci de nous faire parvenir un duplicata de cette feuille de soins, à demander auprès de votre médecin"
+      }
+    ],
+    "justificatifs_attendus": [
+      {
+        "nom": "Duplicata de la feuille de soins",
+        "source_excerpt": "un duplicata de cette feuille de soins"
+      }
+    ],
+    "echeance": {
+      "type": "relative",
+      "delai_texte": "21 jours à compter de la réception du présent courrier",
+      "date_calculee": "2026-07-01",
+      "source_excerpt": "dans un délai de 21 jours à compter de la réception du présent courrier"
+    },
+    "montants": [],
+    "avertissements": [
+      "Classement sans suite du remboursement passé le délai"
+    ]
+  },
+  {
+    "id": "CPAM-03",
+    "fichier": "CPAM/CPAM-03.pdf",
+    "organisme_attendu": "CPAM",
+    "type_courrier_attendu": "Dossier d'indemnités journalières incomplet",
+    "date_courrier": "25 juin 2026",
+    "reference_personne": "N° Sécurité sociale 1 78 11 234 567 89",
+    "actions_attendues": [
+      {
+        "titre": "Demander à l'employeur de transmettre l'attestation de salaire",
+        "source_excerpt": "Nous vous invitons à vous rapprocher de votre employeur afin qu'il transmette cette attestation avant le 25 août 2026"
+      }
+    ],
+    "justificatifs_attendus": [
+      {
+        "nom": "Attestation de salaire de l'employeur",
+        "source_excerpt": "faute d'attestation de salaire transmise par votre employeur"
+      }
+    ],
+    "echeance": {
+      "type": "explicite",
+      "date_calculee": "2026-08-25",
+      "source_excerpt": "avant le 25 août 2026"
+    },
+    "montants": [
+      {
+        "libelle": "Indemnité journalière",
+        "valeur": "27,44 €/jour"
+      }
+    ],
+    "avertissements": [
+      "Versement suspendu jusqu'à réception de l'attestation"
+    ]
+  },
+  {
+    "id": "CPAM-04",
+    "fichier": "CPAM/CPAM-04.pdf",
+    "organisme_attendu": "CPAM",
+    "type_courrier_attendu": "Attestation à transmettre",
+    "date_courrier": "1 juillet 2026",
+    "reference_personne": "N° Sécurité sociale 2 88 02 456 789 01",
+    "actions_attendues": [
+      {
+        "titre": "Transmettre l'avis d'imposition 2026 sur les revenus 2025",
+        "source_excerpt": "Merci de nous transmettre votre avis d'imposition 2026 sur les revenus 2025 avant le 1er septembre 2026"
+      }
+    ],
+    "justificatifs_attendus": [
+      {
+        "nom": "Avis d'imposition 2026 sur les revenus 2025",
+        "source_excerpt": "votre avis d'imposition 2026 sur les revenus 2025"
+      }
+    ],
+    "echeance": {
+      "type": "explicite",
+      "date_calculee": "2026-09-01",
+      "source_excerpt": "avant le 1er septembre 2026"
+    },
+    "montants": [],
+    "avertissements": [
+      "Non-renouvellement automatique de la CSS sans ce document"
+    ]
+  },
+  {
+    "id": "CPAM-05",
+    "fichier": "CPAM/CPAM-05.pdf",
+    "organisme_attendu": "CPAM",
+    "type_courrier_attendu": "Accusé de réception — Purement informatif",
+    "date_courrier": "8 juillet 2026",
+    "reference_personne": "N° Sécurité sociale 1 92 05 345 678 12",
+    "actions_attendues": [],
+    "justificatifs_attendus": [],
+    "echeance": null,
+    "montants": [],
+    "avertissements": [],
+    "note": "Courrier purement informatif : aucune action, aucun justificatif, aucune échéance attendus."
+  },
+  {
+    "id": "FT-01",
+    "fichier": "FRANCE-TRAVAIL/FT-01.pdf",
+    "organisme_attendu": "FRANCE_TRAVAIL",
+    "type_courrier_attendu": "Actualisation mensuelle",
+    "date_courrier": "28 juin 2026",
+    "reference_personne": "Identifiant demandeur d'emploi FT2026-004821",
+    "actions_attendues": [
+      {
+        "titre": "Actualiser sa situation en ligne ou par téléphone",
+        "source_excerpt": "Cette actualisation doit être réalisée avant le 31 juillet 2026 depuis votre espace personnel"
+      }
+    ],
+    "justificatifs_attendus": [],
+    "echeance": {
+      "type": "explicite",
+      "date_calculee": "2026-07-31",
+      "source_excerpt": "Cette actualisation doit être réalisée avant le 31 juillet 2026"
+    },
+    "montants": [
+      {
+        "libelle": "Allocation de Retour à l'Emploi (ARE)",
+        "valeur": "38,72 €/jour"
+      }
+    ],
+    "avertissements": [
+      "Interruption du versement de l'ARE en l'absence d'actualisation"
+    ]
+  },
+  {
+    "id": "FT-02",
+    "fichier": "FRANCE-TRAVAIL/FT-02.pdf",
+    "organisme_attendu": "FRANCE_TRAVAIL",
+    "type_courrier_attendu": "Convocation",
+    "date_courrier": "3 juillet 2026",
+    "reference_personne": "Identifiant demandeur d'emploi FT2026-009345",
+    "actions_attendues": [
+      {
+        "titre": "Se présenter à l'entretien du 12 août 2026 à 10h00, ou le reporter sous 48h en cas d'empêchement",
+        "source_excerpt": "vous êtes convoquée à un entretien avec votre conseiller référent le 12 août 2026 à 10h00"
+      }
+    ],
+    "justificatifs_attendus": [
+      {
+        "nom": "Pièce d'identité",
+        "source_excerpt": "Merci de vous munir de votre pièce d'identité"
+      },
+      {
+        "nom": "État actualisé des démarches de recherche d'emploi",
+        "source_excerpt": "un état actualisé de vos démarches de recherche d'emploi"
+      }
+    ],
+    "echeance": {
+      "type": "explicite",
+      "date_calculee": "2026-08-12",
+      "source_excerpt": "le 12 août 2026 à 10h00"
+    },
+    "montants": [],
+    "avertissements": [
+      "Réduction ou suspension de l'allocation en cas d'absence non justifiée"
+    ]
+  },
+  {
+    "id": "FT-03",
+    "fichier": "FRANCE-TRAVAIL/FT-03.pdf",
+    "organisme_attendu": "FRANCE_TRAVAIL",
+    "type_courrier_attendu": "Justificatif d'activité",
+    "date_courrier": "20 juin 2026",
+    "reference_personne": "Identifiant demandeur d'emploi FT2026-002214",
+    "actions_attendues": [
+      {
+        "titre": "Transmettre l'attestation de présence en formation de juin",
+        "source_excerpt": "Merci de nous transmettre l'attestation de présence signée par votre organisme de formation pour le mois de juin avant le 10 juillet 2026"
+      }
+    ],
+    "justificatifs_attendus": [
+      {
+        "nom": "Attestation de présence en formation (juin 2026)",
+        "source_excerpt": "l'attestation de présence signée par votre organisme de formation"
+      }
+    ],
+    "echeance": {
+      "type": "explicite",
+      "date_calculee": "2026-07-10",
+      "source_excerpt": "avant le 10 juillet 2026"
+    },
+    "montants": [],
+    "avertissements": [
+      "Suspension possible des droits au titre du mois concerné"
+    ]
+  },
+  {
+    "id": "FT-04",
+    "fichier": "FRANCE-TRAVAIL/FT-04.pdf",
+    "organisme_attendu": "FRANCE_TRAVAIL",
+    "type_courrier_attendu": "Demande de remboursement",
+    "date_courrier": "10 juillet 2026",
+    "reference_personne": "Identifiant demandeur d'emploi FT2026-007788",
+    "actions_attendues": [
+      {
+        "titre": "Rembourser le trop-perçu ou demander un plan de remboursement échelonné",
+        "source_excerpt": "Cette somme doit nous être remboursée avant le 30 septembre 2026"
+      }
+    ],
+    "justificatifs_attendus": [],
+    "echeance": {
+      "type": "explicite",
+      "date_calculee": "2026-09-30",
+      "source_excerpt": "Cette somme doit nous être remboursée avant le 30 septembre 2026"
+    },
+    "montants": [
+      {
+        "libelle": "Trop-perçu ARE",
+        "valeur": "156,40 €"
+      }
+    ],
+    "avertissements": [
+      "Déduction sur les droits futurs à défaut de remboursement"
+    ]
+  },
+  {
+    "id": "FT-05",
+    "fichier": "FRANCE-TRAVAIL/FT-05.pdf",
+    "organisme_attendu": "FRANCE_TRAVAIL",
+    "type_courrier_attendu": "Mise à jour de situation",
+    "date_courrier": "5 juillet 2026",
+    "reference_personne": "Identifiant demandeur d'emploi FT2026-001567",
+    "actions_attendues": [
+      {
+        "titre": "Vérifier les informations du contrat et signaler toute erreur",
+        "source_excerpt": "Nous vous invitons à vérifier l'exactitude des informations relatives à votre contrat de travail dans votre espace personnel et à nous signaler toute erreur avant le 15 août 2026"
+      }
+    ],
+    "justificatifs_attendus": [],
+    "echeance": {
+      "type": "explicite",
+      "date_calculee": "2026-08-15",
+      "source_excerpt": "avant le 15 août 2026"
+    },
+    "montants": [
+      {
+        "libelle": "Nouvelle Allocation de Retour à l'Emploi",
+        "valeur": "24,10 €/jour"
+      }
+    ],
+    "avertissements": []
+  }
+]

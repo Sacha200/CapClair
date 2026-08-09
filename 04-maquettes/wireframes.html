@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>CapClair — Wireframes (itération 1)</title>
+<style>
+  :root {
+    --gray-100: #f5f5f5;
+    --gray-200: #e8e8e8;
+    --gray-300: #d4d4d4;
+    --gray-400: #b0b0b0;
+    --gray-600: #777;
+    --gray-800: #333;
+    --line: #999;
+    --accent: #444;
+    --note-bg: #fff8e1;
+    --note-border: #e0c15c;
+    --ref-bg: #eef3f8;
+    --ref-border: #9db8cf;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+    margin: 0;
+    background: #ffffff;
+    color: var(--gray-800);
+    display: flex;
+  }
+  nav {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    width: 250px;
+    flex-shrink: 0;
+    background: var(--gray-100);
+    border-right: 1px solid var(--gray-300);
+    padding: 20px 14px;
+    overflow-y: auto;
+  }
+  nav h1 {
+    font-size: 15px;
+    margin: 0 0 4px;
+  }
+  nav .sub {
+    font-size: 11px;
+    color: var(--gray-600);
+    margin-bottom: 18px;
+  }
+  nav a {
+    display: block;
+    font-size: 13px;
+    color: var(--gray-800);
+    text-decoration: none;
+    padding: 7px 8px;
+    border-radius: 4px;
+    margin-bottom: 2px;
+  }
+  nav a:hover { background: var(--gray-200); }
+  nav a span.num {
+    display: inline-block;
+    width: 18px;
+    color: var(--gray-600);
+    font-weight: 600;
+  }
+  main {
+    flex: 1;
+    padding: 30px 40px 80px;
+    max-width: 1040px;
+  }
+  .screen {
+    margin-bottom: 70px;
+    padding-top: 10px;
+  }
+  .screen-head {
+    margin-bottom: 14px;
+  }
+  .screen-head .label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--gray-600);
+  }
+  .screen-head h2 {
+    margin: 2px 0 6px;
+    font-size: 20px;
+  }
+  .screen-head .goal {
+    font-size: 13px;
+    color: var(--gray-600);
+    font-style: italic;
+  }
+  .frame {
+    border: 1.5px solid var(--gray-800);
+    border-radius: 6px;
+    background: #fff;
+    overflow: hidden;
+  }
+  .frame-bar {
+    background: var(--gray-800);
+    color: #fff;
+    font-size: 11px;
+    padding: 5px 10px;
+    display: flex;
+    justify-content: space-between;
+  }
+  .frame-body {
+    padding: 18px;
+  }
+  .box {
+    border: 1px dashed var(--line);
+    background: var(--gray-100);
+    color: var(--gray-600);
+    font-size: 12px;
+    padding: 10px;
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+  }
+  .row { display: flex; gap: 12px; }
+  .col { display: flex; flex-direction: column; gap: 12px; }
+  .btn {
+    background: var(--gray-800);
+    color: #fff;
+    font-size: 12px;
+    padding: 9px 16px;
+    border-radius: 4px;
+    text-align: center;
+    display: inline-block;
+  }
+  .btn.secondary {
+    background: #fff;
+    color: var(--gray-800);
+    border: 1px solid var(--gray-800);
+  }
+  .btn.ghost {
+    background: #fff;
+    color: var(--gray-600);
+    border: 1px dashed var(--gray-400);
+  }
+  .field {
+    border: 1px solid var(--gray-400);
+    border-radius: 4px;
+    padding: 8px 10px;
+    font-size: 12px;
+    color: var(--gray-600);
+    background: #fff;
+  }
+  .card {
+    border: 1px solid var(--gray-300);
+    border-radius: 5px;
+    padding: 10px;
+    font-size: 12px;
+  }
+  .tag {
+    display: inline-block;
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 10px;
+    background: var(--gray-200);
+    color: var(--gray-800);
+    margin-right: 4px;
+  }
+  .tag.warn { background: #fde3d3; color: #7a3b12; }
+  .tag.ok { background: #dcefe0; color: #205c33; }
+  .badge-conf-low {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    color: #7a3b12;
+    background: #fde3d3;
+    border: 1px solid #e3a06c;
+    padding: 4px 8px;
+    border-radius: 4px;
+  }
+  .annotations {
+    margin-top: 14px;
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .ref-block, .note-block {
+    flex: 1;
+    min-width: 260px;
+    font-size: 12px;
+    padding: 10px 12px;
+    border-radius: 5px;
+  }
+  .ref-block {
+    background: var(--ref-bg);
+    border: 1px solid var(--ref-border);
+  }
+  .note-block {
+    background: var(--note-bg);
+    border: 1px solid var(--note-border);
+  }
+  .ref-block b, .note-block b { display: block; margin-bottom: 4px; font-size: 11px; text-transform: uppercase; letter-spacing: .04em;}
+  hr.sep { border: none; border-top: 1px solid var(--gray-300); margin: 60px 0; }
+  .placeholder-text { color: var(--gray-600); font-size: 12px; line-height: 1.5; }
+  .list-item {
+    border: 1px solid var(--gray-300);
+    border-radius: 4px;
+    padding: 8px 10px;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .checkbox {
+    width: 14px; height: 14px;
+    border: 1px solid var(--gray-600);
+    display: inline-block;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+  .checkbox.checked { background: var(--gray-600); }
+  .strike { text-decoration: line-through; color: var(--gray-400); }
+</style>
+</head>
+<body>
+
+<nav>
+  <h1>CapClair</h1>
+  <div class="sub">Wireframes — itération 1<br>22 juillet 2026</div>
+  <a href="#s1"><span class="num">01</span>Connexion / Inscription</a>
+  <a href="#s2"><span class="num">02</span>Tableau de bord</a>
+  <a href="#s3"><span class="num">03</span>Import d'un courrier</a>
+  <a href="#s4"><span class="num">04</span>Attente d'analyse</a>
+  <a href="#s5"><span class="num">05</span>Résultat d'analyse</a>
+  <a href="#s6"><span class="num">06</span>Pilotage du dossier</a>
+  <a href="#s7"><span class="num">07</span>Brouillon de réponse</a>
+  <a href="#s8"><span class="num">08</span>Paramètres et compte</a>
+  <a href="#s9"><span class="num">09</span>Pages légales</a>
+  <a href="#s10"><span class="num">10</span>États système</a>
+</nav>
+
+<main>
+
+<p class="placeholder-text" style="margin-bottom:40px;">
+Wireframes basse fidélité — structure et hiérarchie de l'information uniquement, aucun style visuel définitif.
+Chaque écran est annoté avec les user stories concernées (<code>02-user-stories/01-epics-et-user-stories.md</code>)
+et les décisions du registre (<code>01-cadrage/03-incoherences-et-arbitrages.md</code>, section F) qui s'y appliquent.
+</p>
+
+<!-- ================= SCREEN 1 ================= -->
+<section class="screen" id="s1">
+  <div class="screen-head">
+    <div class="label">Écran 01</div>
+    <h2>Connexion / Inscription</h2>
+    <div class="goal">« En tant qu'utilisateur, je veux créer un compte ou me connecter pour accéder à mes dossiers. »</div>
+  </div>
+  <div class="frame">
+    <div class="frame-bar"><span>capclair.fr/connexion</span><span>375 × 700</span></div>
+    <div class="frame-body">
+      <div class="col">
+        <div class="box" style="height:50px;">Logo CapClair</div>
+        <div class="row" style="justify-content:center; gap:20px; font-size:12px; color:var(--gray-600);">
+          <span style="border-bottom:2px solid var(--gray-800); padding-bottom:4px;">Connexion</span>
+          <span>Inscription</span>
+        </div>
+        <div class="field">Adresse e-mail</div>
+        <div class="field">Mot de passe</div>
+        <div class="btn" style="align-self:stretch; text-align:center;">Se connecter</div>
+        <div style="font-size:11px; text-align:center; color:var(--gray-600);">Mot de passe oublié ?</div>
+        <hr style="width:100%; border-color:var(--gray-300);">
+        <div class="box" style="height:40px; font-size:11px;">Lien vers les CGU et la politique de confidentialité</div>
+      </div>
+    </div>
+  </div>
+  <div class="annotations">
+    <div class="ref-block">
+      <b>Références</b>
+      US-1.1 Inscription · US-1.2 Connexion/déconnexion · US-1.3 Réinitialisation du mot de passe
+    </div>
+    <div class="note-block">
+      <b>Points d'attention</b>
+      Formulaire unique avec bascule connexion/inscription (pas deux pages séparées) pour limiter le nombre d'écrans.
+      Message d'erreur explicite en cas d'échec (pas de jargon technique) — cohérent avec le persona Nadia (A2/B1).
+    </div>
+  </div>
+</section>
+
+<hr class="sep">
+
+<!-- ================= SCREEN 2 ================= -->
+<section class="screen" id="s2">
+  <div class="screen-head">
+    <div class="label">Écran 02</div>
+    <h2>Tableau de bord</h2>
+    <div class="goal">« En tant qu'utilisateur, je veux voir tous mes dossiers et leur statut en un coup d'œil. »</div>
+  </div>
+  <div class="frame">
+    <div class="frame-bar"><span>capclair.fr/tableau-de-bord</span><span>960 × 640</span></div>
+    <div class="frame-body">
+      <div class="row" style="justify-content:space-between; align-items:center; margin-bottom:14px;">
+        <div class="box" style="width:110px; height:30px;">Logo</div>
+        <div class="row">
+          <div class="box" style="width:130px; height:30px;">Nadia K. ▾</div>
+        </div>
+      </div>
+      <div class="row" style="justify-content:space-between; align-items:center; margin-bottom:14px;">
+        <div style="font-size:15px; font-weight:600;">Mes dossiers (3)</div>
+        <div class="btn">+ Importer un courrier</div>
+      </div>
+      <div class="col">
+        <div class="card row" style="justify-content:space-between; align-items:center;">
+          <div>
+            <div><b>CAF — Demande de justificatifs</b></div>
+            <div style="color:var(--gray-600);">Reçu le 3 juillet 2026</div>
+          </div>
+          <span class="tag warn">Action requise</span>
+        </div>
+        <div class="card row" style="justify-content:space-between; align-items:center;">
+          <div>
+            <div><b>France Travail — Convocation</b></div>
+            <div style="color:var(--gray-600);">Reçu le 3 juillet 2026</div>
+          </div>
+          <span class="tag">En attente</span>
+        </div>
+        <div class="card row" style="justify-content:space-between; align-items:center;">
+          <div>
+            <div><b>CPAM — Accusé de réception</b></div>
+            <div style="color:var(--gray-600);">Reçu le 8 juillet 2026</div>
+          </div>
+          <span class="tag ok">Terminé</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="annotations">
+    <div class="ref-block">
+      <b>Références</b>
+      US-5.4 Tableau de bord · US-1.5 Isolation des données · US-1.4 Protection des routes
+    </div>
+    <div class="note-block">
+      <b>Points d'attention</b>
+      Statut affiché en texte + couleur, jamais en couleur seule (accessibilité, US-8.5). Voir écran 10 pour l'état
+      « aucun dossier ». D9 : le libellé de statut doit rester compréhensible pour Nadia sans explication — à tester.
+    </div>
+  </div>
+</section>
+
+<hr class="sep">
+
+<!-- ================= SCREEN 3 ================= -->
+<section class="screen" id="s3">
+  <div class="screen-head">
+    <div class="label">Écran 03</div>
+    <h2>Import d'un courrier</h2>
+    <div class="goal">« En tant qu'utilisateur, je veux déposer un courrier PDF et confirmer qu'il est fictif avant analyse. »</div>
+  </div>
+  <div class="frame">
+    <div class="frame-bar"><span>capclair.fr/importer</span><span>960 × 640</span></div>
+    <div class="frame-body">
+      <div class="col">
+        <div class="box" style="height:150px; border-style:dashed;">
+          Zone de dépôt — glisser un fichier PDF ou <u>parcourir</u>
+        </div>
+        <div class="card row" style="justify-content:space-between; align-items:center;">
+          <span>courrier-caf-01.pdf (240 Ko)</span>
+          <span class="tag ok">Aperçu chargé</span>
+        </div>
+        <div class="row" style="align-items:flex-start; gap:8px;">
+          <span class="checkbox"></span>
+          <span style="font-size:12px;">Je confirme qu'il s'agit d'un document fictif et je comprends que CapClair ne doit pas être utilisé avec de vrais courriers administratifs.</span>
+        </div>
+        <div class="row" style="justify-content:flex-end; gap:10px;">
+          <div class="btn secondary">Annuler</div>
+          <div class="btn">Lancer l'analyse</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="annotations">
+    <div class="ref-block">
+      <b>Références</b>
+      US-2.1 Import d'un fichier · US-2.2 Aperçu avant analyse · US-2.3 Confirmation du caractère fictif · US-3.1 Consentement explicite
+    </div>
+    <div class="note-block">
+      <b>Points d'attention</b>
+      D5 : seul le PDF est accepté. Un import d'image aboutit à l'écran 10 (« document illisible »), pas à une erreur bloquante.
+      La case de confirmation fictive et le consentement IA (US-3.1) peuvent être fusionnés en une seule étape pour éviter un écran supplémentaire — à valider.
+    </div>
+  </div>
+</section>
+
+<hr class="sep">
+
+<!-- ================= SCREEN 4 ================= -->
+<section class="screen" id="s4">
+  <div class="screen-head">
+    <div class="label">Écran 04</div>
+    <h2>Écran d'attente d'analyse</h2>
+    <div class="goal">« En tant qu'utilisateur, je veux savoir que l'analyse est en cours et pouvoir la relancer si elle échoue. »</div>
+  </div>
+  <div class="frame">
+    <div class="frame-bar"><span>capclair.fr/dossiers/{id}/analyse</span><span>960 × 480</span></div>
+    <div class="frame-body">
+      <div class="col" style="align-items:center; text-align:center; padding:30px 0;">
+        <div class="box" style="width:70px; height:70px; border-radius:50%;">⟳</div>
+        <div style="font-size:14px; font-weight:600; margin-top:14px;">Analyse de votre courrier en cours…</div>
+        <div class="placeholder-text">Cela prend généralement moins de 30 secondes.</div>
+        <div class="btn ghost" style="margin-top:16px;">Revenir au tableau de bord</div>
+      </div>
+      <hr style="border-color:var(--gray-300);">
+      <div class="placeholder-text" style="margin-top:10px;"><b>Variante échec :</b></div>
+      <div class="card row" style="justify-content:space-between; align-items:center; margin-top:6px;">
+        <span>Une erreur est survenue pendant l'analyse. Vos données n'ont pas été perdues.</span>
+        <div class="btn">Relancer l'analyse</div>
+      </div>
+    </div>
+  </div>
+  <div class="annotations">
+    <div class="ref-block">
+      <b>Références</b>
+      I-13 Reprise d'analyse · D8 Analyse asynchrone
+    </div>
+    <div class="note-block">
+      <b>Points d'attention</b>
+      État `EN_COURS` / `ÉCHEC` porté par le job BullMQ (architecture §6). L'utilisateur ne doit jamais rester bloqué
+      sans action possible : bouton de sortie et bouton de relance toujours visibles.
+    </div>
+  </div>
+</section>
+
+<hr class="sep">
+
+<!-- ================= SCREEN 5 ================= -->
+<section class="screen" id="s5">
+  <div class="screen-head">
+    <div class="label">Écran 05</div>
+    <h2>Résultat d'analyse</h2>
+    <div class="goal">« En tant qu'utilisateur, je veux voir le résultat de l'analyse structuré sur un seul écran, dans un ordre fixe. »</div>
+  </div>
+  <div class="frame">
+    <div class="frame-bar"><span>capclair.fr/dossiers/{id}</span><span>960 × 900</span></div>
+    <div class="frame-body">
+      <div class="tag">CAF détectée</div>
+      <div class="card" style="margin-top:10px; border-color:#e3a06c;">
+        <b>Échéance principale</b>
+        <div style="margin-top:4px;">2 août 2026 <span class="badge-conf-low">⚠ À vérifier</span></div>
+        <div style="color:var(--gray-600); margin-top:4px;">Calculée à partir de « 30 jours à compter de la réception du présent courrier »</div>
+      </div>
+      <div class="card" style="margin-top:10px;">
+        <b>Résumé</b>
+        <div class="placeholder-text" style="margin-top:4px;">La CAF vous demande deux documents pour continuer à instruire votre dossier RSA…</div>
+      </div>
+      <div class="card" style="margin-top:10px;">
+        <b>Actions à faire (2)</b>
+        <div class="col" style="margin-top:6px;">
+          <div class="list-item"><span class="checkbox"></span>Envoyer le justificatif de domicile</div>
+          <div class="list-item"><span class="checkbox"></span>Envoyer l'avis d'imposition 2025</div>
+        </div>
+      </div>
+      <div class="card" style="margin-top:10px;">
+        <b>Justificatifs à préparer (2)</b>
+        <div class="col" style="margin-top:6px;">
+          <div class="list-item"><span class="checkbox"></span>Justificatif de domicile de moins de 3 mois</div>
+          <div class="list-item"><span class="checkbox"></span>Avis d'imposition 2025 sur les revenus 2024</div>
+        </div>
+      </div>
+      <div class="card" style="margin-top:10px;">
+        <b>Informations extraites</b>
+        <div class="row" style="justify-content:space-between; font-size:12px; margin-top:6px;">
+          <span>Référence allocataire : 0847213C</span>
+          <span style="text-decoration:underline; color:var(--gray-600);">Voir l'extrait source</span>
+        </div>
+        <div class="row" style="justify-content:flex-end; margin-top:6px;">
+          <span class="btn secondary" style="font-size:11px;">Corriger cette information</span>
+        </div>
+      </div>
+      <div class="card" style="margin-top:10px;">
+        <b>Brouillon de réponse</b>
+        <div class="placeholder-text" style="margin-top:4px;">Aperçu des 2 premières lignes du brouillon généré…</div>
+        <div class="btn secondary" style="margin-top:8px; font-size:11px;">Ouvrir le brouillon complet</div>
+      </div>
+    </div>
+  </div>
+  <div class="annotations">
+    <div class="ref-block">
+      <b>Références</b>
+      US-4.1 Écran de résultat · US-4.2 Extraits sources · US-4.3 Niveau de confiance · US-4.4 Correction manuelle
+    </div>
+    <div class="note-block">
+      <b>Points d'attention</b>
+      Ordre imposé par US-4.1 : échéance → résumé → actions → justificatifs → informations extraites → brouillon.
+      D10 : seul le niveau de confiance <i>faible</i> est mis en avant visuellement (badge orange) ; confiance
+      moyenne/élevée reste silencieuse. Le pictogramme seul suffit rarement — le texte « À vérifier » est obligatoire.
+    </div>
+  </div>
+</section>
+
+<hr class="sep">
+
+<!-- ================= SCREEN 6 ================= -->
+<section class="screen" id="s6">
+  <div class="screen-head">
+    <div class="label">Écran 06</div>
+    <h2>Pilotage du dossier</h2>
+    <div class="goal">« En tant qu'utilisateur, je veux changer le statut de mon dossier et gérer mes actions dans le temps. »</div>
+  </div>
+  <div class="frame">
+    <div class="frame-bar"><span>capclair.fr/dossiers/{id}/pilotage</span><span>960 × 700</span></div>
+    <div class="frame-body">
+      <div class="row" style="justify-content:space-between; align-items:center;">
+        <div style="font-weight:600;">Statut du dossier</div>
+        <div class="field">À faire ▾</div>
+      </div>
+      <div class="placeholder-text" style="margin-top:4px;">À analyser · Action requise · Documents à préparer · Réponse prête · En attente · Terminé</div>
+      <div class="card" style="margin-top:16px;">
+        <b>Actions</b>
+        <div class="col" style="margin-top:6px;">
+          <div class="list-item"><span class="checkbox checked"></span><span class="strike">Envoyer le justificatif de domicile</span></div>
+          <div class="list-item"><span class="checkbox"></span>Envoyer l'avis d'imposition 2025</div>
+          <div class="list-item" style="border-style:dashed; color:var(--gray-600);">+ Ajouter une action</div>
+        </div>
+      </div>
+      <div class="card" style="margin-top:12px;">
+        <b>Justificatifs</b>
+        <div class="col" style="margin-top:6px;">
+          <div class="list-item"><span class="checkbox"></span>Justificatif de domicile</div>
+          <div class="list-item"><span class="checkbox"></span>Avis d'imposition</div>
+        </div>
+      </div>
+      <div class="row" style="justify-content:space-between; margin-top:16px;">
+        <span class="btn ghost ref-block" style="font-size:11px; padding:6px 10px;">Historique du dossier — post-MVP (US-4.5)</span>
+        <span class="btn secondary" style="font-size:11px; border-color:#b23b3b; color:#b23b3b;">Supprimer définitivement</span>
+      </div>
+    </div>
+  </div>
+  <div class="annotations">
+    <div class="ref-block">
+      <b>Références</b>
+      US-5.1 Statuts · US-5.2 Actions · US-5.3 Checklist justificatifs · US-5.5 Suppression définitive · US-4.5 Historique
+    </div>
+    <div class="note-block">
+      <b>Points d'attention</b>
+      D9 : les 6 statuts sont affichés tels quels pour le MVP ; à retester. Le bouton « Historique » est présent mais
+      mène à un état « Bientôt disponible » tant que US-4.5 n'est pas développée (coupe C9). Suppression définitive
+      = double confirmation obligatoire (non représentée ici, à traiter en modale).
+    </div>
+  </div>
+</section>
+
+<hr class="sep">
+
+<!-- ================= SCREEN 7 ================= -->
+<section class="screen" id="s7">
+  <div class="screen-head">
+    <div class="label">Écran 07</div>
+    <h2>Brouillon de réponse</h2>
+    <div class="goal">« En tant qu'utilisateur, je veux éditer et exporter un brouillon de réponse, sans jamais l'envoyer depuis l'application. »</div>
+  </div>
+  <div class="frame">
+    <div class="frame-bar"><span>capclair.fr/dossiers/{id}/brouillon</span><span>960 × 640</span></div>
+    <div class="frame-body">
+      <div class="card" style="background:#fde3d3; border-color:#e3a06c; font-size:12px;">
+        ⚠ CapClair n'envoie aucun courrier. Vous restez seul responsable de la transmission à l'administration.
+      </div>
+      <div class="box" style="height:280px; margin-top:12px; align-items:flex-start; justify-content:flex-start; text-align:left; padding:14px;">
+        Madame, Monsieur,<br><br>
+        Je vous adresse ci-joint les documents demandés dans votre courrier du 3 juillet 2026…<br><br>
+        <span style="background:#fde3d3; padding:1px 4px;">[Compléter : numéro d'allocataire]</span><br><br>
+        Cordialement,<br>
+        <span style="background:#fde3d3; padding:1px 4px;">[Compléter : votre nom]</span>
+      </div>
+      <div class="row" style="justify-content:flex-end; gap:10px; margin-top:12px;">
+        <div class="btn secondary">Copier le texte</div>
+        <div class="btn secondary">Exporter en PDF</div>
+      </div>
+    </div>
+  </div>
+  <div class="annotations">
+    <div class="ref-block">
+      <b>Références</b>
+      US-6.1 Génération · US-6.2 Édition · US-6.3 Copie/export · US-6.4 Absence d'envoi automatique
+    </div>
+    <div class="note-block">
+      <b>Points d'attention</b>
+      I-8 — trois garde-fous : (1) aucune affirmation absente du dossier, (2) zones à compléter surlignées
+      explicitement plutôt que devinées (voir surlignage orange), (3) avertissement de relecture visible en permanence,
+      pas seulement au premier affichage.
+    </div>
+  </div>
+</section>
+
+<hr class="sep">
+
+<!-- ================= SCREEN 8 ================= -->
+<section class="screen" id="s8">
+  <div class="screen-head">
+    <div class="label">Écran 08</div>
+    <h2>Paramètres et compte</h2>
+    <div class="goal">« En tant qu'utilisateur, je veux gérer mes préférences de rappel et la conservation de mes données. »</div>
+  </div>
+  <div class="frame">
+    <div class="frame-bar"><span>capclair.fr/parametres</span><span>960 × 560</span></div>
+    <div class="frame-body">
+      <div class="card">
+        <b>Compte</b>
+        <div class="placeholder-text" style="margin-top:4px;">nadia.kourouma@exemple.fr</div>
+      </div>
+      <div class="card" style="margin-top:12px;">
+        <b>Rappels</b>
+        <div class="row" style="justify-content:space-between; align-items:center; margin-top:6px;">
+          <span style="font-size:12px;">Recevoir un rappel avant chaque échéance</span>
+          <div class="box" style="width:36px; height:20px; border-radius:10px;">●</div>
+        </div>
+        <div class="placeholder-text" style="margin-top:4px;">Réglage unique global — coupe C7 (pas de canal ni de délai personnalisable au MVP)</div>
+      </div>
+      <div class="card" style="margin-top:12px;">
+        <b>Conservation des données</b>
+        <div class="placeholder-text" style="margin-top:4px;">Vos dossiers inactifs depuis 12 mois sont supprimés automatiquement. Vous recevez un e-mail 30 jours avant.</div>
+      </div>
+      <div class="row" style="justify-content:flex-end; margin-top:12px;">
+        <span class="btn secondary" style="font-size:11px; border-color:#b23b3b; color:#b23b3b;">Supprimer mon compte</span>
+      </div>
+    </div>
+  </div>
+  <div class="annotations">
+    <div class="ref-block">
+      <b>Références</b>
+      US-7.4 Notifications internes · US-7.5 Préférences de rappel
+    </div>
+    <div class="note-block">
+      <b>Points d'attention</b>
+      D12 rendu visible et explicite ici, pas seulement dans les CGU — l'utilisateur doit comprendre la purge à 12 mois
+      sans avoir à lire un document juridique.
+    </div>
+  </div>
+</section>
+
+<hr class="sep">
+
+<!-- ================= SCREEN 9 ================= -->
+<section class="screen" id="s9">
+  <div class="screen-head">
+    <div class="label">Écran 09</div>
+    <h2>Pages légales</h2>
+    <div class="goal">« En tant qu'utilisateur, je veux comprendre ce que CapClair fait de mes données et ses limites. »</div>
+  </div>
+  <div class="frame">
+    <div class="frame-bar"><span>capclair.fr/cgu</span><span>960 × 560</span></div>
+    <div class="frame-body row" style="gap:20px;">
+      <div class="col" style="width:200px; flex-shrink:0;">
+        <div class="card" style="font-weight:600;">CGU</div>
+        <div class="card">Politique de confidentialité</div>
+        <div class="card">Mentions légales</div>
+      </div>
+      <div class="box" style="flex:1; height:300px; align-items:flex-start; justify-content:flex-start; text-align:left; padding:14px;">
+        CapClair n'est pas un conseiller juridique. Les proches aidants peuvent utiliser leur propre compte pour
+        accompagner un tiers dans ses démarches, sous réserve d'y être autorisés…
+      </div>
+    </div>
+  </div>
+  <div class="annotations">
+    <div class="ref-block">
+      <b>Références</b>
+      US-8.3 Pages légales
+    </div>
+    <div class="note-block">
+      <b>Points d'attention</b>
+      I-6 : le rôle du proche aidant doit être écrit noir sur blanc ici. D12 (purge 12 mois) et le consentement IA
+      (US-3.1) doivent aussi y être rappelés en langage simple, pas seulement en jargon juridique.
+    </div>
+  </div>
+</section>
+
+<hr class="sep">
+
+<!-- ================= SCREEN 10 ================= -->
+<section class="screen" id="s10">
+  <div class="screen-head">
+    <div class="label">Écran 10</div>
+    <h2>États système</h2>
+    <div class="goal">« En tant qu'utilisateur, je ne dois jamais me retrouver face à un écran blanc ou un message incompréhensible. »</div>
+  </div>
+  <div class="frame">
+    <div class="frame-bar"><span>États transverses</span><span>960 × 640</span></div>
+    <div class="frame-body">
+      <div class="row" style="gap:14px;">
+        <div class="col" style="flex:1;">
+          <div class="box" style="height:120px;">Tableau de bord vide<br>« Vous n'avez pas encore de dossier. Importez votre premier courrier. »</div>
+        </div>
+        <div class="col" style="flex:1;">
+          <div class="box" style="height:120px;">Document illisible<br>« Nous n'avons pas réussi à lire ce document. Essayez un PDF. »</div>
+        </div>
+      </div>
+      <div class="row" style="gap:14px; margin-top:14px;">
+        <div class="col" style="flex:1;">
+          <div class="box" style="height:120px;">Erreur générale (500)<br>« Une erreur est survenue. Réessayez dans un instant. »</div>
+        </div>
+        <div class="col" style="flex:1;">
+          <div class="box" style="height:120px;">Page introuvable (404)<br>« Cette page n'existe pas. Retour au tableau de bord. »</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="annotations">
+    <div class="ref-block">
+      <b>Références</b>
+      M-2 Écran d'erreur global et 404/500 · US-2.6 Document illisible
+    </div>
+    <div class="note-block">
+      <b>Points d'attention</b>
+      Ces états n'étaient pas prévus dans le plan initial (point manquant M-2). Ton toujours rassurant, jamais de
+      message technique brut (pas de code d'erreur affiché à l'utilisateur).
+    </div>
+  </div>
+</section>
+
+</main>
+</body>
+</html>

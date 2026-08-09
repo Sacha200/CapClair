@@ -1,0 +1,74 @@
+# ============================================================================
+# CapClair
+# Ce dépôt porte la documentation, la conception et le schéma de base de
+# données. Les entrées front/back anticipent l'amorçage de 07-developpement/.
+# ============================================================================
+
+# ---- Secrets ----
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# ---- Dépendances ----
+node_modules/
+.pnpm-store/
+.yarn/*
+!.yarn/patches
+!.yarn/releases
+!.yarn/versions
+
+# ---- Prisma ----
+# En v7 le client est généré dans le dépôt et non plus dans node_modules :
+# c'est un artefact de build, régénéré par `prisma generate`.
+07-developpement/**/src/generated/
+07-developpement/db/prisma/*.db
+07-developpement/db/prisma/*.db-journal
+
+# ---- Build Next.js / TypeScript ----
+.next/
+out/
+build/
+dist/
+*.tsbuildinfo
+next-env.d.ts
+
+# ---- Tests et qualité ----
+coverage/
+.nyc_output/
+playwright-report/
+test-results/
+
+# ---- Exécution ----
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pids/
+*.pid
+
+# Courriers déposés par les utilisateurs — stockés hors racine web, jamais versionnés.
+# À ne pas confondre avec 05-courriers-fictifs/, qui est du corpus de démonstration.
+uploads/
+storage/
+
+# ---- Déploiement ----
+.vercel/
+.turbo/
+
+# ---- Éditeurs ----
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+*.swp
+
+# ---- Système ----
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Fichiers temporaires Word (06-tests-utilisateurs/ contient un .docx)
+~$*.doc*
+~$*.xls*

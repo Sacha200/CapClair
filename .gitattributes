@@ -1,0 +1,31 @@
+# ============================================================================
+# Normalisation des fins de ligne.
+# Sans ce fichier, Git classe les PDF de 05-courriers-fictifs/ comme du texte
+# et leur applique une conversion CRLF qui les corrompt.
+# ============================================================================
+
+* text=auto
+
+# ---- Binaires : aucune conversion ----
+*.pdf   binary
+*.docx  binary
+*.xlsx  binary
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.webp  binary
+*.ico   binary
+*.woff  binary
+*.woff2 binary
+*.zip   binary
+
+# ---- Toujours en LF, y compris sous Windows ----
+*.sh        text eol=lf
+*.prisma    text eol=lf
+*.ts        text eol=lf
+*.tsx       text eol=lf
+
+# ---- Exclus des statistiques de langage GitHub ----
+05-courriers-fictifs/** linguist-documentation
+04-maquettes/wireframes.html linguist-documentation

@@ -1,0 +1,376 @@
+// ============================================================================
+// CapClair — Schéma de base de données (Prisma / PostgreSQL)
+// ----------------------------------------------------------------------------
+// Aligné sur le modèle relationnel validé (voir 02-schema-base-de-donnees.md
+// et erd-capclair.mermaid). Base unique, monolithe modulaire.
+// Décisions reflétées :
+//   D7  — dates/montants calculés serveur ; l'IA ne fournit que l'extrait source
+//   D8  — analyse asynchrone (analysisStatus + worker)
+//   D9  — quatre statuts de dossier (réduit de six après tests)
+//   D10 — confiance : score stocké, jamais affiché brut ; 3 niveaux
+//   D12 — conservation 12 mois (lastActivityAt + purge planifiée)
+//   D14 — catégories = référentiel seedé (table Category, code stable)
+// Auth : schéma Auth.js (adaptateur Prisma).
+// Principe directeur : l'IA propose, le serveur décide de ce qui est enregistré.
+// ============================================================================
+
+// Prisma 7 : le client est généré dans le dépôt (plus dans node_modules),
+// et l'URL de connexion vit dans prisma.config.ts, plus ici.
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ======================= ÉNUMÉRATIONS =======================
+
+enum Organisme {
+  CAF
+  CPAM
+  FRANCE_TRAVAIL
+}
+
+/// Modèle à 4 statuts (décision D9, confirmé au retest).
+enum CaseStatus {
+  A_ANALYSER
+  A_FAIRE
+  EN_ATTENTE_REPONSE
+  TERMINE
+}
+
+/// État du traitement asynchrone d'analyse (décision D8).
+enum AnalysisStatus {
+  EN_ATTENTE
+  EN_COURS
+  TERMINEE
+  ECHEC
+}
+
+/// Trois niveaux affichés ; seul FAIBLE est mis en avant (décision D10).
+enum ConfidenceLevel {
+  FAIBLE
+  MOYEN
+  ELEVE
+}
+
+/// Nature de l'échéance : lue telle quelle, ou délai calculé côté serveur (D7).
+enum EcheanceType {
+  EXPLICITE
+  RELATIVE
+}
+
+enum ReminderType {
+  J_MOINS_7
+  J_MOINS_1
+  JOUR_J
+}
+
+enum ReminderChannel {
+  EMAIL
+  IN_APP
+}
+
+enum ReminderStatus {
+  EN_ATTENTE
+  ENVOYE
+  ANNULE
+}
+
+enum NotificationType {
+  ANALYSE_TERMINEE
+  ANALYSE_ECHEC
+  RAPPEL
+  SYSTEME
+}
+
+enum ConsentType {
+  ANALYSE_IA
+  CGU
+}
+
+// ======================= AUTHENTIFICATION (Auth.js) =======================
+
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  /// Haché (credentials). Nullable pour un éventuel compte OAuth.
+  passwordHash  String?
+  name          String?
+  emailVerified DateTime?
+  image         String?
+
+  /// Réglage unique global des rappels (coupe C7).
+  reminderOptIn  Boolean  @default(true)
+  /// Pilote la purge automatique après 12 mois d'inactivité (D12).
+  lastActivityAt DateTime @default(now())
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  accounts      Account[]
+  sessions      Session[]
+  caseFiles     CaseFile[]
+  notifications Notification[]
+  consentLogs   ConsentLog[]
+  auditEvents   AuditEvent[]
+
+  @@index([lastActivityAt])
+}
+
+model Account {
+  id                String   @id @default(uuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?  @db.Text
+  access_token      String?  @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?  @db.Text
+  session_state     String?
+  createdAt         DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(uuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ======================= DOSSIER =======================
+
+model CaseFile {
+  id             String         @id @default(uuid())
+  userId         String
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  organisme      Organisme
+  title          String
+  status         CaseStatus     @default(A_ANALYSER)
+  analysisStatus AnalysisStatus @default(EN_ATTENTE)
+
+  // Échéance principale — TOUJOURS calculée par le serveur (D7).
+  // L'IA ne renvoie que mainDeadlineSourceExcerpt ; le serveur en déduit la date.
+  mainDeadline              DateTime?
+  mainDeadlineType          EcheanceType?
+  mainDeadlineSourceExcerpt String?
+  mainDeadlineConfidence    ConfidenceLevel?
+
+  summary        String?   @db.Text
+  lastActivityAt DateTime  @default(now())
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  documents      Document[]
+  extractedInfos ExtractedInformation[]
+  actionItems    ActionItem[]
+  requiredDocs   RequiredDocument[]
+  responseDraft  ResponseDraft?
+  reminders      Reminder[]
+  notifications  Notification[]
+  consentLogs    ConsentLog[]
+  auditEvents    AuditEvent[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([analysisStatus])
+}
+
+model Document {
+  id         String   @id @default(uuid())
+  caseFileId String
+  caseFile   CaseFile @relation(fields: [caseFileId], references: [id], onDelete: Cascade)
+
+  filename    String
+  mimeType    String
+  sizeBytes   Int
+  storagePath String
+  /// Texte extrait du PDF. Barrière : pas d'appel IA si < 100 caractères utiles.
+  extractedText String? @db.Text
+  createdAt     DateTime @default(now())
+
+  @@index([caseFileId])
+}
+
+// ======================= ANALYSE =======================
+
+/// Référentiel des catégories d'information (D14).
+/// `code` est l'ensemble fermé stable, alimenté par un seed ; les autres champs
+/// portent les métadonnées d'affichage (enrichissables sans casser le code métier).
+model Category {
+  id           String   @id @default(uuid())
+  code         String   @unique
+  label        String
+  labelEn      String?
+  description  String?
+  icon         String?
+  color        String?
+  displayOrder Int      @default(0)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  extractedInfos ExtractedInformation[]
+}
+
+model ExtractedInformation {
+  id         String   @id @default(uuid())
+  caseFileId String
+  caseFile   CaseFile @relation(fields: [caseFileId], references: [id], onDelete: Cascade)
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+
+  label String
+  value String
+  /// Passage littéral du courrier d'où provient l'information (anti-hallucination).
+  sourceExcerpt   String          @db.Text
+  /// Score brut conservé pour la mesure de qualité ; jamais affiché tel quel (D10).
+  confidenceScore Float?
+  confidenceLevel ConfidenceLevel @default(ELEVE)
+  createdAt       DateTime        @default(now())
+
+  @@index([caseFileId])
+  @@index([categoryId])
+}
+
+model ActionItem {
+  id         String   @id @default(uuid())
+  caseFileId String
+  caseFile   CaseFile @relation(fields: [caseFileId], references: [id], onDelete: Cascade)
+
+  title         String
+  sourceExcerpt String   @db.Text
+  done          Boolean  @default(false)
+  doneAt        DateTime?
+  position      Int      @default(0)
+
+  // Échéance propre à l'action — calculée serveur (D7).
+  dueDate              DateTime?
+  dueDateType          EcheanceType?
+  dueDateSourceExcerpt String?
+  dueDateConfidence    ConfidenceLevel?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([caseFileId])
+}
+
+model RequiredDocument {
+  id         String   @id @default(uuid())
+  caseFileId String
+  caseFile   CaseFile @relation(fields: [caseFileId], references: [id], onDelete: Cascade)
+
+  name          String
+  sourceExcerpt String   @db.Text
+  provided      Boolean  @default(false)
+  createdAt     DateTime @default(now())
+
+  @@index([caseFileId])
+}
+
+model ResponseDraft {
+  id         String   @id @default(uuid())
+  caseFileId String   @unique
+  caseFile   CaseFile @relation(fields: [caseFileId], references: [id], onDelete: Cascade)
+
+  /// Ne contient aucune affirmation factuelle absente du dossier (I-8).
+  /// Les zones à compléter sont matérialisées explicitement (ex. [À compléter : ...]).
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ======================= RAPPELS & NOTIFICATIONS =======================
+
+model Reminder {
+  id         String   @id @default(uuid())
+  caseFileId String
+  caseFile   CaseFile @relation(fields: [caseFileId], references: [id], onDelete: Cascade)
+
+  reminderType ReminderType
+  channel      ReminderChannel
+  status       ReminderStatus  @default(EN_ATTENTE)
+  scheduledFor DateTime
+  sentAt       DateTime?
+  createdAt    DateTime        @default(now())
+
+  // Garde-fou anti-doublon : au plus un rappel par (dossier, type, canal).
+  // Le worker fait une transition atomique EN_ATTENTE -> ENVOYE (US-7.3).
+  @@unique([caseFileId, reminderType, channel])
+  @@index([status, scheduledFor])
+}
+
+model Notification {
+  id         String    @id @default(uuid())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  caseFileId String?
+  caseFile   CaseFile? @relation(fields: [caseFileId], references: [id], onDelete: SetNull)
+
+  type      NotificationType
+  title     String
+  body      String
+  read      Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  @@index([userId, read])
+}
+
+// ======================= CONFORMITÉ & AUDIT =======================
+
+model ConsentLog {
+  id         String    @id @default(uuid())
+  // Nullable + SET NULL : on conserve une trace anonymisée après suppression du compte.
+  userId     String?
+  user       User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  caseFileId String?
+  caseFile   CaseFile? @relation(fields: [caseFileId], references: [id], onDelete: SetNull)
+
+  consentType ConsentType
+  granted     Boolean
+  // Immuable : preuve du consentement explicite avant appel IA (US-3.1). Pas d'updatedAt.
+  createdAt   DateTime    @default(now())
+
+  @@index([userId])
+}
+
+model AuditEvent {
+  id         String    @id @default(uuid())
+  userId     String?
+  user       User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  caseFileId String?
+  caseFile   CaseFile? @relation(fields: [caseFileId], references: [id], onDelete: SetNull)
+
+  // Journalisé au fil des sprints même si l'écran d'historique est reporté (coupe C9).
+  // Ne contient jamais de contenu sensible de courrier (US-8.2).
+  eventType String
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  @@index([caseFileId])
+  @@index([userId])
+}
