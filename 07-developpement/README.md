@@ -73,8 +73,29 @@ instances cohabitent.
 | `npm run db:up` | démarre le conteneur et attend qu'il soit *healthy* |
 | `npm run db:down` | arrête le conteneur, les données survivent |
 | `npm run db:reset` | **supprime le volume** et repart d'une base vide |
+| `npm run pgadmin` | démarre la base **et** pgAdmin sur http://localhost:5050 |
 | `npm run migrate` | `prisma migrate dev` — nouvelle migration après modification du schéma |
 | `npm run studio` | inspecteur web des données |
+
+### pgAdmin
+
+Sous le profil Compose `app`, donc **pas** démarré par `db:up` — l'image pèse
+783 Mo pour un usage occasionnel. Identifiants et port viennent de `.env`
+(`PGADMIN_DEFAULT_EMAIL`, `PGADMIN_DEFAULT_PASSWORD`, `PGADMIN_PORT`) ; sans mot
+de passe, le conteneur refuse de démarrer.
+
+Au moment d'enregistrer le serveur dans l'interface, le piège classique :
+
+| Champ | Valeur |
+|---|---|
+| Host | `db` — **pas** `localhost` |
+| Port | `5432` — **pas** `5434` |
+| Base | `capclair` |
+| Utilisateur / mot de passe | `capclair` / `capclair_dev` |
+
+`db:5432` est l'adresse sur le réseau interne de Compose. `localhost:5434` est le
+mappage vu depuis la machine hôte : c'est ce que Prisma utilise, mais il ne
+signifie rien à l'intérieur du conteneur pgAdmin.
 
 ### État de la base
 

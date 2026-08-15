@@ -8,6 +8,11 @@
 #   docker compose up -d      démarrer
 #   docker compose down       arrêter (les données survivent)
 #   docker compose down -v    arrêter ET supprimer les données
+#
+#   docker compose --profile app up -d    démarrer avec pgAdmin
+#
+# pgAdmin écoute sur http://localhost:5050 (PGADMIN_PORT) et lit ses
+# identifiants dans .env.
 # ============================================================================
 
 services:
@@ -36,6 +41,30 @@ services:
       retries: 10
       start_period: 10s
 
+  # Profil "app" : ne démarre pas avec un simple `up -d`, l'image pesant 783 Mo
+  # pour un usage occasionnel. Lancer avec `docker compose --profile app up -d`.
+  #
+  # Depuis ce conteneur, la base est joignable en `db` sur le port 5432 — le
+  # réseau interne de Compose — et non `localhost:5434`, qui est le mappage
+  # côté hôte. C'est l'erreur classique au moment d'enregistrer le serveur.
+  pgadmin:
+    image: dpage/pgadmin4
+    profiles: ["app"]
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=${PGADMIN_DEFAULT_EMAIL:-admin@capclair.com}
+      - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_DEFAULT_PASSWORD}
+    ports:
+      - "${PGADMIN_PORT:-5050}:80"
+    volumes:
+      - capclair-pgadmin:/var/lib/pgadmin
+
 volumes:
   capclair-pgdata:
     name: capclair-pgdata
+  capclair-pgadmin:
+    name: capclair-pgadmin
