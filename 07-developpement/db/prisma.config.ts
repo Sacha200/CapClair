@@ -23,7 +23,11 @@ export default defineConfig({
   schema: "prisma/schema.prisma",
   migrations: {
     path: "prisma/migrations",
-    // Référentiel des catégories (D14) : à activer quand prisma/seed.ts existera.
+    // Le référentiel des catégories (D14) n'est PAS ici : il est inséré par la
+    // migration 20260811140006_seed_categories, conformément à la spec
+    // « seedée à la migration (valeurs figées) ». Un `migrate deploy` suffit
+    // donc à l'obtenir, sans étape séparée.
+    // Cette entrée reste disponible pour d'éventuels jeux de données de test :
     // seed: "tsx prisma/seed.ts",
   },
   datasource: {

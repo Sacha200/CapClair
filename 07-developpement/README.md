@@ -27,7 +27,9 @@ db/
   prisma.config.ts       URL de connexion + chemins (schéma, migrations, seed)
   prisma/
     schema.prisma        15 modèles, 10 enums
-    migrations/          20260809225640_init
+    migrations/
+      20260809225640_init              tables, enums, index, clés étrangères
+      20260811140006_seed_categories   référentiel D14
 ```
 
 ### Trois changements de Prisma 7 à connaître
@@ -76,8 +78,40 @@ instances cohabitent.
 
 ### État de la base
 
-La migration `20260809225640_init` est appliquée. Vérifié en base : **16 tables**
-(15 modèles + `_prisma_migrations`), **10 enums**, **16 clés étrangères**.
+Les deux migrations sont appliquées. Vérifié en base : **16 tables**
+(15 modèles + `_prisma_migrations`), **10 enums**, **16 clés étrangères**, et les
+**6 catégories** du référentiel D14.
+
+### Le référentiel des catégories (D14)
+
+Il est inséré par une **migration de données**, pas par `prisma db seed` :
+`02-schema-base-de-donnees.md` spécifie « seedée à la migration (valeurs
+figées) ». Concrètement, un `migrate deploy` suffit à garantir le référentiel en
+production, sans étape séparée — ce qui compte, `ExtractedInformation.categoryId`
+étant non nullable et en `onDelete: Restrict` : aucune analyse ne peut rien
+enregistrer tant que les catégories n'existent pas.
+
+| `code` | `label` | `icon` | `color` | ordre |
+|---|---|---|---|---|
+| REFERENCE | Référence | `ri-hashtag` | `#1F5F8B` | 1 |
+| MONTANT | Montant | `ri-money-euro-circle-line` | `#1F5F8B` | 2 |
+| DATE | Date | `ri-calendar-line` | `#1F5F8B` | 3 |
+| IDENTITE | Identité | `ri-user-line` | `#1F5F8B` | 4 |
+| CONTACT | Contact | `ri-phone-line` | `#1F5F8B` | 5 |
+| AUTRE | Autre | `ri-information-line` | `#5A6472` | 6 |
+
+Valeurs reprises telles quelles de `03-architecture/02-schema-base-de-donnees.md`
+et de `04-maquettes/design-system.md` — icônes **Remix Icon** (`@remixicon/react`,
+la bibliothèque du DSFR), variantes `-line`.
+
+La migration est écrite en `ON CONFLICT ("code") DO UPDATE`, donc rejouable :
+mettre à jour un libellé ou une icône ne change pas les `id` et ne casse donc
+aucune `ExtractedInformation` existante. Vérifié par un rejeu — empreinte des
+`id` identique, toujours 6 lignes.
+
+Modifier une valeur d'affichage se fait par **une nouvelle migration**, ce qui
+est le prix de « valeurs figées » : la contrepartie est qu'aucun environnement
+ne peut diverger.
 
 Le tri respecte les accents — `avion < ecole < élève < zebre`. Il fallait pour
 cela le fournisseur ICU en locale `fr-FR` : l'image Debian ne génère que

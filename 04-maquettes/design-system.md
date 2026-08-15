@@ -86,6 +86,33 @@ L'information n'est **jamais portée par la couleur seule** : chaque statut, ale
 confiance associe une forme (pastille, icône) et un libellé texte. Cible tactile minimale 44 px.
 Contrastes AA. Ces règles servent le persona principal (Nadia, faible aisance numérique).
 
+## Iconographie
+
+Bibliothèque **Remix Icon** (open source, licence Apache 2.0) — **la même que le Système de Design de
+l'État (DSFR)**, cohérent avec notre parti pris d'inspiration DSFR. Rendue en React via `@remixicon/react`.
+Icônes 24×24. Le champ `icon` de la table `Category` **stocke le nom Remix** (ex. `ri-calendar-line`),
+ce qui découple le code métier du rendu.
+
+Mapping des catégories d'information :
+
+| Code catégorie | Icône Remix | Usage |
+|---|---|---|
+| `REFERENCE` | `ri-hashtag` | Référence, n° de dossier |
+| `MONTANT` | `ri-money-euro-circle-line` | Montants |
+| `DATE` | `ri-calendar-line` | Dates, échéances |
+| `IDENTITE` | `ri-user-line` | Identité |
+| `CONTACT` | `ri-phone-line` | Coordonnées |
+| `AUTRE` | `ri-information-line` | Autre information |
+
+Icônes d'interface clés : `ri-alert-line` (confiance faible / à vérifier), `ri-checkbox-circle-line`
+(terminé), `ri-folder-line` (dossier), `ri-upload-2-line` (importer). Documentées dans la section
+**Iconographie** de la page Figma (les glyphes affichés y sont indicatifs ; le rendu final utilise les
+vraies icônes Remix).
+
+> Convention : variantes **`-line`** (contour) par défaut, cohérentes avec le trait de l'interface ;
+> les variantes `-fill` sont réservées aux états actifs si besoin. Le champ `icon` restant agnostique,
+> un changement de bibliothèque n'impacterait que le rendu.
+
 ## État
 
 La charte est appliquée aux **10 écrans** de la page ✨ Hi-Fi. Reste possible pour plus tard :

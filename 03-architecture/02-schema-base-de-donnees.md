@@ -251,6 +251,21 @@ erDiagram
 > figées via migration) pour permettre des métadonnées riches, tout en conservant la garantie de
 > cohérence de D14 au niveau applicatif.
 
+## Données de référence (seed)
+
+La table `Category` est **seedée** à la migration (valeurs figées, D14). Le champ `icon` porte un nom
+d'icône **Remix Icon** (`@remixicon/react`, la bibliothèque du DSFR) — voir la section Iconographie du
+design system.
+
+| `code` | `label` | `icon` (Remix) | `color` | `display_order` |
+|---|---|---|---|---|
+| REFERENCE | Référence | `ri-hashtag` | `#1F5F8B` | 1 |
+| MONTANT | Montant | `ri-money-euro-circle-line` | `#1F5F8B` | 2 |
+| DATE | Date | `ri-calendar-line` | `#1F5F8B` | 3 |
+| IDENTITE | Identité | `ri-user-line` | `#1F5F8B` | 4 |
+| CONTACT | Contact | `ri-phone-line` | `#1F5F8B` | 5 |
+| AUTRE | Autre | `ri-information-line` | `#5A6472` | 6 |
+
 ## Règles d'intégrité référentielle
 
 
