@@ -39,3 +39,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Fichiers de gabarit create-next-app non utilisés
+AGENTS.md
+CLAUDE.md
