@@ -1,7 +1,17 @@
-# DossierClair — Architecture technique
+# CapClair — Architecture technique
 
-**Version** : 1.0 — 22 juillet 2026
+**Version** : 1.1 — révisé au démarrage du développement
 **Statut** : décisions techniques tranchées, à valider
+
+> **Révision v1.1 (implémentation).** Le code n'est plus un monolithe Next.js unique
+> mais **deux applications séparées** : `07-developpement/front/` (Next.js App Router,
+> UI) et `07-developpement/back/` (API **Fastify** + worker BullMQ), reliées par un
+> **contrat d'API HTTP** (paquet Zod `07-developpement/contract/`). Il n'y a donc
+> **pas de Server Actions** ; l'authentification est gérée **côté back** par des
+> sessions opaques maison (table `Session`, cookie `httpOnly`), pas par Auth.js.
+> Les §2 (schéma) et §5 (organisation du code) ci-dessous décrivent l'intention
+> d'origine ; voir `07-developpement/decisions.md` (ADR-001, ADR-002) pour la
+> structure retenue.
 
 Ce document est la version détaillée de la section 7 du cahier des charges. Il fige les choix d'architecture et tranche les quatre décisions techniques restées ouvertes (D7, D8, D11, D14).
 

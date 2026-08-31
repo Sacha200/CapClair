@@ -1,4 +1,4 @@
-# DossierClair — Backlog priorisé
+# CapClair — Backlog priorisé
 
 **Version** : 2.0 — 21 juillet 2026
 **Remplace** : v1.0 (planning 8 semaines, hypothèse temps plein)
