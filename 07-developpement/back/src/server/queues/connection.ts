@@ -13,8 +13,22 @@ export function createRedisConnection(): Redis {
 
 let shared: Redis | undefined;
 
-/** Connexion mutualisée pour les usages non-worker (rate-limit, health check). */
+/**
+ * Connexion mutualisée pour les usages non-worker (rate-limit, sonde d'état).
+ * Réglée pour **échouer vite** : la sonde `/api/sante` ne doit jamais se bloquer
+ * si Redis est indisponible.
+ */
 export function sharedRedis(): Redis {
-  shared ??= new Redis(env.REDIS_URL, { lazyConnect: true });
+  if (!shared) {
+    shared = new Redis(env.REDIS_URL, {
+      lazyConnect: true,
+      connectTimeout: 1_000,
+      maxRetriesPerRequest: 1,
+      enableOfflineQueue: false,
+      retryStrategy: () => null,
+    });
+    // La sonde d'état gère l'indisponibilité ; on évite juste le bruit "unhandled error".
+    shared.on("error", () => {});
+  }
   return shared;
 }

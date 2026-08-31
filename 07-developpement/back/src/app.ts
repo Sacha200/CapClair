@@ -51,19 +51,8 @@ export async function buildApp() {
     }),
   });
 
-  // --- Routes publiques ---
-  await app.register(healthRoutes);
-  await app.register(authRoutes);
-
-  // --- Scope /api gardé ---
-  await app.register(async (secured) => {
-    await secured.register(authGuard);
-    secured.addHook("preHandler", secured.authenticate);
-
-    // Route de fumée pour tester la garde (US-1.4 AC3/AC4).
-    secured.get("/api/_ping", async (request) => ({ ok: true, userId: request.user?.id }));
-  });
-
+  // Gestionnaires d'erreur AVANT l'enregistrement des routes : les contextes
+  // enfants (plugins de routes) héritent du gestionnaire présent à leur création.
   app.setNotFoundHandler((_request, reply) => {
     void reply.code(404).send({ error: "Route inconnue.", code: "not_found" });
   });
@@ -95,6 +84,19 @@ export async function buildApp() {
 
     request.log.error({ err: error }, "Erreur non gérée");
     return reply.code(500).send({ error: "Erreur interne.", code: "internal" });
+  });
+
+  // --- Routes publiques ---
+  await app.register(healthRoutes);
+  await app.register(authRoutes);
+
+  // --- Scope /api gardé ---
+  await app.register(async (secured) => {
+    await secured.register(authGuard);
+    secured.addHook("preHandler", secured.authenticate);
+
+    // Route de fumée pour tester la garde (US-1.4 AC3/AC4).
+    secured.get("/api/_ping", async (request) => ({ ok: true, userId: request.user?.id }));
   });
 
   return app;

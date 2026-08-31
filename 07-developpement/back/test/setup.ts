@@ -14,7 +14,11 @@ export default function setup(): void {
   // argon2 rapide en test.
   process.env.ARGON2_MEMORY_KIB ??= "8192";
   process.env.ARGON2_TIME_COST ??= "1";
-  process.env.AUTH_FIXED_DELAY_MS ??= "60";
-  process.env.AUTH_FIXED_DELAY_JITTER_MS ??= "10";
+  // En prod, le hachage argon2 (timeCost 3 / 64 MiB, ~200 ms) domine et absorbe
+  // l'écart d'insertion entre les branches de `register`. En test, argon2 est
+  // dialé au minimum : on relève donc le plancher pour que les deux branches
+  // restent bornées par lui (US-1.1 AC4).
+  process.env.AUTH_FIXED_DELAY_MS ??= "400";
+  process.env.AUTH_FIXED_DELAY_JITTER_MS ??= "20";
   migrateTestDatabase(url);
 }

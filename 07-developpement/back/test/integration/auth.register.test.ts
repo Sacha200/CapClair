@@ -44,6 +44,9 @@ describe("POST /auth/register", () => {
     const app = await getApp();
     await createUser(prisma, { email: "pris@exemple.fr" });
 
+    // Chauffe le moteur Prisma / le pool : l'AC vise le régime établi, pas le démarrage à froid.
+    await app.inject({ method: "POST", url: "/auth/register", payload: { ...valid, email: "warmup@exemple.fr" } });
+
     const timeCall = async (payload: Record<string, unknown>) => {
       const t0 = performance.now();
       const res = await app.inject({ method: "POST", url: "/auth/register", payload });
