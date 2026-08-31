@@ -79,7 +79,8 @@ statiques et validation runtime. À la séparation des dépôts, le paquet sera 
 (registre privé ou dépendance git) sans changer les imports.
 
 **Conséquences.** Un `tsc` supplémentaire dans le pipeline ; discipline « build
-contract d'abord » (script `prebuild` + CI + README).
+contract d'abord » (CI + README). Voir **ADR-007** : un workspace npm a finalement
+été adopté à l'amorçage pour fiabiliser la résolution du paquet.
 
 ---
 
@@ -155,3 +156,47 @@ sera revu avec US-2.3 et US-3.1.
 
 **Conséquences.** Le schéma correspond désormais à la préservation des corrections
 manuelles (US-4.4) et au calendrier de rappels J-7/J-3/J-0 (US-7.1).
+
+---
+
+## ADR-007 — Workspace npm à la racine de `07-developpement/`
+
+**Date** : sprint 1 (amorçage).
+**Statut** : acté (révise le B8 du plan « pas de workspace racine »).
+
+**Contexte.** Avec `@capclair/contract` déclaré en `file:../contract`, Node le
+résout nativement (le back build sans souci) mais **Turbopack** (bundler par
+défaut de Next 16) échoue à résoudre le paquet à travers le lien symbolique
+(`Module not found: Can't resolve '@capclair/contract'`).
+
+**Décision.** Un `07-developpement/package.json` privé déclare
+`"workspaces": ["contract", "back", "front"]`. Un seul `npm install` à ce niveau,
+`node_modules` hoisté, `@capclair/contract` devient un paquet de workspace résolu
+nativement par tous les outils (tsc, Vitest, Next/Turbopack).
+
+**Conséquences.**
+- Un seul `package-lock.json` (`07-developpement/package-lock.json`).
+- Les commandes se lancent par workspace : `npm run <script> --workspace capclair-back`
+  (ou `--workspace front`, `--workspace @capclair/contract`).
+- À la séparation en deux dépôts : `contract/` est publié (registre privé ou
+  dépendance git), le workspace disparaît, les imports ne changent pas.
+- Le `.gitignore` racine (`node_modules/`) couvre `07-developpement/node_modules/`.
+
+## ADR-008 — Framework back : Fastify ; front : Next.js 16 sans shadcn/ui
+
+**Date** : sprint 1.
+**Statut** : acté.
+
+**Contexte.** Le plan citait shadcn/ui côté front. `create-next-app` a produit
+Next **16** + React **19** + Tailwind **v4** (config CSS-first via `@theme`).
+
+**Décision.**
+- Back : **Fastify 5** (API) + un process worker BullMQ distinct.
+- Front : Next.js 16 App Router + Tailwind v4. Les quelques primitives d'UI
+  nécessaires à E1 (Button, TextField, CheckboxField, Alert) sont **écrites à la
+  main** (~15 lignes chacune, accessibles) plutôt que via `shadcn init`, dont la
+  compatibilité avec Tailwind v4 + React 19 + Next 16 était incertaine au moment
+  de l'amorçage. shadcn/ui pourra être introduit plus tard si le besoin grandit.
+- Polices : **Spectral** (lecture) via `next/font/google` ; **Marianne** substituée
+  par **Mulish** en attendant les fichiers officiels et la validation de licence
+  (la variable CSS reste `--font-marianne`).

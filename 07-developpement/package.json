@@ -1,0 +1,16 @@
+{
+  "name": "capclair-workspace",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Espace de travail CapClair : contract (contrat d'API partagé), back (Fastify + worker), front (Next.js). Deux dépôts à terme ; workspace npm en attendant (voir decisions.md, ADR-003).",
+  "workspaces": [
+    "contract",
+    "back",
+    "front"
+  ],
+  "scripts": {
+    "build": "npm run build --workspace @capclair/contract && npm run build --workspace capclair-back && npm run build --workspace front",
+    "test": "npm run test --workspace capclair-back && npm run test --workspace front",
+    "lint": "npm run lint --workspace capclair-back && npm run lint --workspace front"
+  }
+}
