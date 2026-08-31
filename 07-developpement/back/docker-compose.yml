@@ -15,6 +15,12 @@
 # identifiants dans .env.
 # ============================================================================
 
+# Nom de projet fixe : le conteneur et le volume ont été créés quand ce fichier
+# vivait dans `07-developpement/db/` (projet « db »). On garde ce nom pour que
+# `docker compose` réutilise le conteneur `capclair-db` et le volume existants,
+# quel que soit le dossier d'où la commande est lancée.
+name: db
+
 services:
   db:
     image: postgres:17
