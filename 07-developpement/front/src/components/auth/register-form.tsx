@@ -11,6 +11,7 @@ import { ApiError } from "@/lib/api/errors";
 import { sanitizeNext } from "@/lib/routing";
 import { Button } from "@/components/ui/button";
 import { TextField } from "@/components/ui/text-field";
+import { PasswordField } from "@/components/ui/password-field";
 import { CheckboxField } from "@/components/ui/checkbox-field";
 import { Alert } from "@/components/ui/alert";
 
@@ -57,17 +58,15 @@ export function RegisterForm({ next }: { next: string | null }) {
         {...register("email")}
         error={errors.email?.message}
       />
-      <TextField
+      <PasswordField
         label="Mot de passe"
-        type="password"
         autoComplete="new-password"
         hint="Au moins 12 caractères."
         {...register("password")}
         error={errors.password?.message}
       />
-      <TextField
+      <PasswordField
         label="Confirmer le mot de passe"
-        type="password"
         autoComplete="new-password"
         {...register("passwordConfirm")}
         error={errors.passwordConfirm?.message}

@@ -11,6 +11,7 @@ import { ApiError } from "@/lib/api/errors";
 import { sanitizeNext } from "@/lib/routing";
 import { Button } from "@/components/ui/button";
 import { TextField } from "@/components/ui/text-field";
+import { PasswordField } from "@/components/ui/password-field";
 import { Alert } from "@/components/ui/alert";
 
 export function LoginForm({ next }: { next: string | null }) {
@@ -47,9 +48,8 @@ export function LoginForm({ next }: { next: string | null }) {
         {...register("email")}
         error={errors.email?.message}
       />
-      <TextField
+      <PasswordField
         label="Mot de passe"
-        type="password"
         autoComplete="current-password"
         {...register("password")}
         error={errors.password?.message}

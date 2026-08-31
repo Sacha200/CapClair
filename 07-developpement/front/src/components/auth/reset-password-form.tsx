@@ -8,7 +8,7 @@ import { AUTH_MESSAGES, ResetInputSchema, type ResetInput } from "@/lib/validati
 import { resetPassword } from "@/lib/api/auth";
 import { ApiError } from "@/lib/api/errors";
 import { Button } from "@/components/ui/button";
-import { TextField } from "@/components/ui/text-field";
+import { PasswordField } from "@/components/ui/password-field";
 import { Alert } from "@/components/ui/alert";
 
 export function ResetPasswordForm({ token }: { token: string }) {
@@ -59,17 +59,15 @@ export function ResetPasswordForm({ token }: { token: string }) {
     <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
       <input type="hidden" {...register("token")} />
       {formError ? <Alert tone="error">{formError}</Alert> : null}
-      <TextField
+      <PasswordField
         label="Nouveau mot de passe"
-        type="password"
         autoComplete="new-password"
         hint="Au moins 12 caractères."
         {...register("password")}
         error={errors.password?.message}
       />
-      <TextField
+      <PasswordField
         label="Confirmer le mot de passe"
-        type="password"
         autoComplete="new-password"
         {...register("passwordConfirm")}
         error={errors.passwordConfirm?.message}
