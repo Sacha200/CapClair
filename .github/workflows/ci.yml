@@ -58,7 +58,8 @@ jobs:
       - run: npm run build --workspace @capclair/contract
       - run: npm run prisma:generate --workspace capclair-back
       - name: Créer la base de test
-        run: psql "$DATABASE_URL" -c 'CREATE DATABASE capclair_test;'
+        # `psql` (libpq) n'accepte pas le paramètre `?schema=` (propre à Prisma) : on le retire.
+        run: psql "${DATABASE_URL%%\?*}" -c 'CREATE DATABASE capclair_test;'
       - run: npm run prisma:deploy --workspace capclair-back
       - run: npm run typecheck --workspace capclair-back
       - run: npm run lint --workspace capclair-back
