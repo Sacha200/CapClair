@@ -64,7 +64,7 @@ enum EcheanceType {
 
 enum ReminderType {
   J_MOINS_7
-  J_MOINS_1
+  J_MOINS_3
   JOUR_J
 }
 
@@ -250,6 +250,9 @@ model ExtractedInformation {
   /// Score brut conservé pour la mesure de qualité ; jamais affiché tel quel (D10).
   confidenceScore Float?
   confidenceLevel ConfidenceLevel @default(ELEVE)
+  /// Corrigé par l'utilisateur : protège la ligne contre l'écrasement par une
+  /// nouvelle analyse (US-4.4 ; la correction prime).
+  isUserCorrected Boolean         @default(false)
   createdAt       DateTime        @default(now())
 
   @@index([caseFileId])
@@ -352,7 +355,10 @@ model ConsentLog {
 
   consentType ConsentType
   granted     Boolean
-  // Immuable : preuve du consentement explicite avant appel IA (US-3.1). Pas d'updatedAt.
+  // Version du document accepté (CGU pour E1 : bundle CGU + confidentialité). US-1.1 AC7.
+  // Défaut = filet ; l'application passe toujours LEGAL_BUNDLE_VERSION explicitement (ADR-004).
+  policyVersion String    @default("v1")
+  // Immuable : preuve du consentement explicite (fait office d'`acceptedAt`). Pas d'updatedAt.
   createdAt   DateTime    @default(now())
 
   @@index([userId])

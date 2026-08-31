@@ -1,0 +1,16 @@
+# Dépendances / build
+node_modules/
+dist/
+coverage/
+
+# Client Prisma généré (artefact de build — Prisma 7 le génère dans le dépôt)
+src/generated/
+
+# Secrets et config locale
+.env
+.env.*
+!.env.example
+
+# Fichiers importés par les utilisateurs (jamais versionnés)
+uploads/
+storage/

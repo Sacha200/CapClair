@@ -1,0 +1,101 @@
+/**
+ * Assemblage de l'application Fastify.
+ *
+ * Périmètre des routes :
+ *  - `GET /api/sante`      : public (sonde d'état).
+ *  - `/auth/*`             : public (register/login/logout/session/password).
+ *  - `/api/*` (autre)      : gardé — 401 sans session valide (US-1.4 AC3).
+ *
+ * Le gestionnaire d'erreurs unique traduit les erreurs applicatives en
+ * `{ error, code?, fields? }` sans jamais fuiter d'interne (US-8.2).
+ */
+import Fastify from "fastify";
+import cookie from "@fastify/cookie";
+import helmet from "@fastify/helmet";
+import rateLimit from "@fastify/rate-limit";
+import {
+  hasZodFastifySchemaValidationErrors,
+  serializerCompiler,
+  validatorCompiler,
+} from "fastify-type-provider-zod";
+import { env, isProd } from "./env.js";
+import { logger } from "./lib/logger.js";
+import { AppError } from "./lib/errors.js";
+import { authGuard } from "./server/auth/guard.js";
+import { authRoutes } from "./features/auth/auth.routes.js";
+import { healthRoutes } from "./features/health/health.routes.js";
+import { AUTH_MESSAGES } from "@capclair/contract";
+
+export async function buildApp() {
+  const app = Fastify({
+    loggerInstance: logger,
+    trustProxy: env.TRUST_PROXY,
+    disableRequestLogging: !isProd,
+  });
+
+  app.setValidatorCompiler(validatorCompiler);
+  app.setSerializerCompiler(serializerCompiler);
+
+  await app.register(helmet, { contentSecurityPolicy: false });
+  await app.register(cookie);
+  await app.register(rateLimit, {
+    global: false,
+    max: 1000,
+    timeWindow: "1 minute",
+    keyGenerator: (request) => request.ip,
+    errorResponseBuilder: (_request, context) => ({
+      statusCode: 429,
+      error: "Too Many Requests",
+      code: "rate_limited",
+      message: `Trop de tentatives. Réessayez dans ${context.after}.`,
+    }),
+  });
+
+  // --- Routes publiques ---
+  await app.register(healthRoutes);
+  await app.register(authRoutes);
+
+  // --- Scope /api gardé ---
+  await app.register(async (secured) => {
+    await secured.register(authGuard);
+    secured.addHook("preHandler", secured.authenticate);
+
+    // Route de fumée pour tester la garde (US-1.4 AC3/AC4).
+    secured.get("/api/_ping", async (request) => ({ ok: true, userId: request.user?.id }));
+  });
+
+  app.setNotFoundHandler((_request, reply) => {
+    void reply.code(404).send({ error: "Route inconnue.", code: "not_found" });
+  });
+
+  app.setErrorHandler((error, request, reply) => {
+    // Échec de validation Zod (corps/params/query).
+    if (hasZodFastifySchemaValidationErrors(error)) {
+      const fields: Record<string, string> = {};
+      for (const issue of error.validation) {
+        const path = issue.params?.issue?.path?.join(".") ?? issue.instancePath.replace(/^\//, "");
+        if (path) fields[path] = issue.params?.issue?.message ?? issue.message ?? "Champ invalide.";
+      }
+      return reply.code(400).send({ error: "Requête invalide.", code: "validation", fields });
+    }
+
+    if (error instanceof AppError) {
+      return reply.code(error.status).send({
+        error: error.message,
+        code: error.code,
+        ...(error.fields ? { fields: error.fields } : {}),
+      });
+    }
+
+    if ((error as { statusCode?: number }).statusCode === 429) {
+      return reply
+        .code(429)
+        .send({ error: AUTH_MESSAGES.tooManyAttempts, code: "rate_limited" });
+    }
+
+    request.log.error({ err: error }, "Erreur non gérée");
+    return reply.code(500).send({ error: "Erreur interne.", code: "internal" });
+  });
+
+  return app;
+}
