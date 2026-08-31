@@ -21,7 +21,11 @@ export interface RequestOptions {
  */
 export async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const base = isServer ? BACK_ORIGIN : BROWSER_API_BASE;
-  const headers: Record<string, string> = { "content-type": "application/json" };
+  const hasBody = options.body !== undefined;
+  const headers: Record<string, string> = {};
+  // Ne PAS annoncer un content-type JSON sans corps : Fastify rejette alors la
+  // requête (FST_ERR_CTP_EMPTY_JSON_BODY → 400). Concerne p. ex. POST /auth/logout.
+  if (hasBody) headers["content-type"] = "application/json";
   if (options.cookieHeader) headers.cookie = options.cookieHeader;
 
   let res: Response;
@@ -29,7 +33,7 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
     res = await fetch(`${base}${path}`, {
       method: options.method ?? "GET",
       headers,
-      body: options.body === undefined ? undefined : JSON.stringify(options.body),
+      body: hasBody ? JSON.stringify(options.body) : undefined,
       credentials: "include",
       cache: "no-store",
     });

@@ -9,12 +9,16 @@ export function AppHeader({ user }: { user: SessionUser }) {
   const router = useRouter();
 
   async function onLogout() {
+    // Un échec de l'appel réseau ne doit pas bloquer l'utilisateur : on le
+    // renvoie vers /connexion dans tous les cas. Le cookie est effacé côté
+    // serveur ; s'il subsiste, la garde de /dashboard s'en chargera.
     try {
       await logout();
-    } finally {
-      router.push("/connexion");
-      router.refresh();
+    } catch {
+      // ignoré volontairement
     }
+    router.push("/connexion");
+    router.refresh();
   }
 
   return (

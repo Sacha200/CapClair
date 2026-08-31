@@ -76,10 +76,19 @@ export async function buildApp() {
       });
     }
 
-    if ((error as { statusCode?: number }).statusCode === 429) {
+    const fastifyError = error as { statusCode?: number; code?: string };
+
+    if (fastifyError.statusCode === 429) {
       return reply
         .code(429)
         .send({ error: AUTH_MESSAGES.tooManyAttempts, code: "rate_limited" });
+    }
+
+    // Erreurs de requête côté client (corps JSON absent/malformé, content-type…).
+    if (typeof fastifyError.statusCode === "number" && fastifyError.statusCode < 500) {
+      return reply
+        .code(fastifyError.statusCode)
+        .send({ error: "Requête invalide.", code: fastifyError.code ?? "bad_request" });
     }
 
     request.log.error({ err: error }, "Erreur non gérée");
