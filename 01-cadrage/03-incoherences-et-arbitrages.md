@@ -1,4 +1,4 @@
-# DossierClair — Incohérences relevées et arbitrages à valider
+# CapClair — Incohérences relevées et arbitrages à valider
 
 **Version** : 1.0 — 21 juillet 2026
 **Statut** : aucune modification du plan n'a été appliquée. Ce document liste ce qui pose problème et propose une décision. **Rien n'est tranché sans votre accord.**

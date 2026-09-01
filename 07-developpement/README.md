@@ -3,143 +3,93 @@
 Tout le code du projet. Les dossiers `01-` à `06-` restent de la documentation ;
 à partir d'ici, ce sont des sources destinées à être exécutées.
 
+## Structure
+
 | Dossier | Contenu | Dépôt cible |
 |---|---|---|
-| `front/` | Interface Next.js | dépôt front |
-| `back/` | API, worker BullMQ, services serveur | dépôt back |
-| `db/` | Schéma Prisma, configuration, migrations, seed | rattaché au back |
+| `contract/` | Contrat d'API : schémas Zod partagés (`@capclair/contract`) | publié / vendu à la séparation |
+| `back/` | API **Fastify** + worker BullMQ + schéma Prisma & migrations | dépôt back |
+| `front/` | Interface **Next.js** (App Router) | dépôt front |
 
-> **À trancher.** `03-architecture/01-architecture-technique.md` décrit un
-> **monolithe modulaire** (Next.js avec ses routes API + un worker, un seul dépôt).
-> La séparation front / back en deux dépôts s'en écarte : elle ajoute un contrat
-> d'API à maintenir et retire les Server Actions du jeu. Si le choix est confirmé,
-> la section « Organisation du code » de ce document est à reprendre.
+**Workspace npm.** `07-developpement/package.json` déclare les trois paquets en
+workspace : un seul `npm install` à ce niveau, un seul `package-lock.json`.
+`@capclair/contract` est ainsi résolu nativement par tsc, Vitest et Next
+(cf. `decisions.md`, ADR-003 & ADR-007). À la séparation en deux dépôts, le
+workspace disparaît et `contract/` est publié — les imports ne changent pas.
 
----
+Décisions structurantes : `decisions.md` (ADR-001 à 008).
 
-## db/ — Prisma 7
-
-```text
-db/
-  docker-compose.yml     PostgreSQL 17 de développement
-  package.json           prisma + dotenv, et les scripts npm
-  .env.example           à copier en .env (ignoré par Git)
-  prisma.config.ts       URL de connexion + chemins (schéma, migrations, seed)
-  prisma/
-    schema.prisma        15 modèles, 10 enums
-    migrations/
-      20260809225640_init              tables, enums, index, clés étrangères
-      20260811140006_seed_categories   référentiel D14
-```
-
-### Trois changements de Prisma 7 à connaître
-
-Ils ont tous été vérifiés en exécutant la CLI 7.9.1 sur ce schéma.
-
-**1. L'URL de connexion sort du schéma.** Le bloc `datasource` ne contient plus
-que `provider`. Un `url = env("DATABASE_URL")` dans `schema.prisma` fait échouer
-toute commande avec `P1012`. L'URL vit dans `prisma.config.ts`.
-
-**2. Prisma ne lit plus `.env` tout seul.** Sans `import "dotenv/config"` en tête
-de `prisma.config.ts`, un fichier `.env` correct est purement ignoré :
-`PrismaConfigEnvError: Cannot resolve environment variable: DATABASE_URL`.
-
-**3. `npx prisma` seul ne suffit plus.** Le fichier de config importe
-`prisma/config`, qui doit être résolvable depuis un `node_modules` local. Sans
-installation locale : `Cannot find module 'prisma/config'`.
-
-Le client est aussi généré dans le dépôt (`src/generated/prisma`) et non plus
-dans `node_modules` — l'`output` du générateur est obligatoire en v7, et ce
-dossier est à ajouter au `.gitignore` du dépôt back.
-
-### Démarrage
-
-Depuis `07-developpement/db/` :
+## Démarrage
 
 ```bash
-npm install
-cp .env.example .env
-npm run db:up            # docker compose up -d --wait
-npx prisma migrate deploy
+cd 07-developpement
+npm install                                  # installe les 3 paquets
+npm run build --workspace @capclair/contract # à faire avant back/front
+
+# --- base de données (Docker) ---
+cd back
+cp .env.example .env                         # renseigner les variables
+npm run db:up                                # Postgres 17 sur le port hôte 5434
+npm run prisma:deploy                        # applique les migrations + 6 catégories
+createdb ... capclair_test  # OU : psql "$DATABASE_URL" -c 'CREATE DATABASE capclair_test;'
+
+# --- lancer ---
+npm run dev            # API sur http://localhost:3001  (GET /api/sante)
+npm run worker         # worker BullMQ (aucune queue pour l'instant)
+cd ../front
+cp .env.local.example .env.local
+npm run dev            # UI sur http://localhost:3000
 ```
 
-La base tourne sur le **port hôte 5434**. Ce n'est pas un caprice : 5432 est
-occupé par le PostgreSQL 17 installé nativement sur la machine de dev, et 5433
-par le conteneur `sonarqube-db`. Rien n'est arrêté ni remplacé, les trois
-instances cohabitent.
-
-| Script | Effet |
-|---|---|
-| `npm run db:up` | démarre le conteneur et attend qu'il soit *healthy* |
-| `npm run db:down` | arrête le conteneur, les données survivent |
-| `npm run db:reset` | **supprime le volume** et repart d'une base vide |
-| `npm run pgadmin` | démarre la base **et** pgAdmin sur http://localhost:5050 |
-| `npm run migrate` | `prisma migrate dev` — nouvelle migration après modification du schéma |
-| `npm run studio` | inspecteur web des données |
-
-### pgAdmin
-
-Sous le profil Compose `app`, donc **pas** démarré par `db:up` — l'image pèse
-783 Mo pour un usage occasionnel. Identifiants et port viennent de `.env`
-(`PGADMIN_DEFAULT_EMAIL`, `PGADMIN_DEFAULT_PASSWORD`, `PGADMIN_PORT`) ; sans mot
-de passe, le conteneur refuse de démarrer.
-
-Au moment d'enregistrer le serveur dans l'interface, le piège classique :
-
-| Champ | Valeur |
-|---|---|
-| Host | `db` — **pas** `localhost` |
-| Port | `5432` — **pas** `5434` |
-| Base | `capclair` |
-| Utilisateur / mot de passe | `capclair` / `capclair_dev` |
-
-`db:5432` est l'adresse sur le réseau interne de Compose. `localhost:5434` est le
-mappage vu depuis la machine hôte : c'est ce que Prisma utilise, mais il ne
-signifie rien à l'intérieur du conteneur pgAdmin.
-
-### État de la base
-
-Les deux migrations sont appliquées. Vérifié en base : **16 tables**
-(15 modèles + `_prisma_migrations`), **10 enums**, **16 clés étrangères**, et les
-**6 catégories** du référentiel D14.
-
-### Le référentiel des catégories (D14)
-
-Il est inséré par une **migration de données**, pas par `prisma db seed` :
-`02-schema-base-de-donnees.md` spécifie « seedée à la migration (valeurs
-figées) ». Concrètement, un `migrate deploy` suffit à garantir le référentiel en
-production, sans étape séparée — ce qui compte, `ExtractedInformation.categoryId`
-étant non nullable et en `onDelete: Restrict` : aucune analyse ne peut rien
-enregistrer tant que les catégories n'existent pas.
-
-| `code` | `label` | `icon` | `color` | ordre |
-|---|---|---|---|---|
-| REFERENCE | Référence | `ri-hashtag` | `#1F5F8B` | 1 |
-| MONTANT | Montant | `ri-money-euro-circle-line` | `#1F5F8B` | 2 |
-| DATE | Date | `ri-calendar-line` | `#1F5F8B` | 3 |
-| IDENTITE | Identité | `ri-user-line` | `#1F5F8B` | 4 |
-| CONTACT | Contact | `ri-phone-line` | `#1F5F8B` | 5 |
-| AUTRE | Autre | `ri-information-line` | `#5A6472` | 6 |
-
-Valeurs reprises telles quelles de `03-architecture/02-schema-base-de-donnees.md`
-et de `04-maquettes/design-system.md` — icônes **Remix Icon** (`@remixicon/react`,
-la bibliothèque du DSFR), variantes `-line`.
-
-La migration est écrite en `ON CONFLICT ("code") DO UPDATE`, donc rejouable :
-mettre à jour un libellé ou une icône ne change pas les `id` et ne casse donc
-aucune `ExtractedInformation` existante. Vérifié par un rejeu — empreinte des
-`id` identique, toujours 6 lignes.
-
-Modifier une valeur d'affichage se fait par **une nouvelle migration**, ce qui
-est le prix de « valeurs figées » : la contrepartie est qu'aucun environnement
-ne peut diverger.
-
-Le tri respecte les accents — `avion < ecole < élève < zebre`. Il fallait pour
-cela le fournisseur ICU en locale `fr-FR` : l'image Debian ne génère que
-`en_US.UTF-8`, sous laquelle « élève » se serait retrouvé trié après « zebre ».
-
-Pour obtenir le SQL d'une migration **sans** base de données :
+## Commandes par paquet
 
 ```bash
-npx prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script
+npm run <script> --workspace capclair-back      # ex. typecheck, lint, test, test:int
+npm run <script> --workspace front
+npm run <script> --workspace @capclair/contract
 ```
+
+| Script (back) | Effet |
+|---|---|
+| `dev` / `worker` | API / worker en watch (`tsx`) |
+| `build` | `prisma generate` puis `tsc` (→ `dist/`) |
+| `typecheck` / `lint` | `tsc --noEmit` / `eslint .` |
+| `test` / `test:int` | Vitest unitaires / intégration (Postgres jetable) |
+| `db:up` / `db:down` / `db:reset` | conteneur Postgres (le `reset` supprime le volume) |
+| `prisma:migrate` / `prisma:deploy` | nouvelle migration / applique les migrations |
+| `studio` | inspecteur web des données |
+
+## back/ — Prisma 7 (points d'attention)
+
+Le schéma (`back/prisma/schema.prisma`, **15 modèles, 10 enums**) et les migrations
+étaient auparavant dans `db/`, désormais rapatriés dans `back/`.
+
+1. **L'URL de connexion sort du schéma** : `datasource` ne contient que `provider` ;
+   l'URL vit dans `back/prisma.config.ts`. Un `url = env(...)` dans `schema.prisma`
+   fait échouer les commandes (`P1012`).
+2. **Prisma ne lit plus `.env` seul** : `import "dotenv/config"` en tête de
+   `prisma.config.ts` (déjà présent).
+3. **`prisma` doit être une devDependency locale** : le fichier de config importe
+   `prisma/config`.
+4. **Le client est généré dans le dépôt** (`back/src/generated/prisma`, **git-ignoré**).
+
+Base Postgres locale sur le **port hôte 5434** (5432 = Postgres natif, 5433 =
+conteneur `sonarqube-db` — les trois cohabitent). Référentiel des 6 catégories (D14)
+inséré par la migration `20260811140006_seed_categories` (donc `prisma:deploy` suffit).
+
+Migrations ajoutées à l'amorçage E1 (ADR-006, ADR-004) — à générer avec la base
+Docker démarrée :
+- `align_schema_with_architecture` : `+ ExtractedInformation.isUserCorrected`,
+  `ReminderType` `J_MOINS_1` → `J_MOINS_3` ;
+- `consentlog_policy_version` : `+ ConsentLog.policyVersion`.
+
+## État
+
+- **`contract/`** : schémas Zod d'auth (register/login/forgot/reset, messages FR),
+  enveloppe d'erreur, chemins d'endpoints. Buildé (`dist/`).
+- **`back/`** : Fastify + module d'authentification complet (E1), `GET /api/sante`,
+  couche d'accès scopée `userId`, rate-limit par route, config validée au boot.
+  26 tests unitaires verts ; 7 suites d'intégration (nécessitent la base Docker).
+- **`front/`** : Next.js 16 + Tailwind v4 (thème du design system, clair uniquement),
+  écran 01 (connexion / inscription), pages mot-de-passe-oublié / réinitialiser,
+  middleware + garde serveur de l'espace connecté, pages 404/500. `next build` OK.

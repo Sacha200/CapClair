@@ -1,0 +1,68 @@
+@import "tailwindcss";
+
+/*
+ * Thème CapClair — tokens de 04-maquettes/design-system.md.
+ * Thème CLAIR uniquement (pas de mode sombre, décision produit).
+ */
+@theme {
+  --color-primary: #1f5f8b;
+  --color-primary-hover: #184c6f;
+  --color-primary-active: #12384f;
+  --color-primary-light: #eaf2f8;
+
+  --color-success: #2e7d46;
+  --color-success-light: #e6f2ea;
+  --color-warning: #c8611a;
+  --color-warning-light: #fbebdd;
+  --color-error: #b42318;
+  --color-error-light: #fcebea;
+
+  --color-text-strong: #1b2733;
+  --color-text: #2a3441;
+  --color-text-muted: #5a6472;
+  --color-text-on-primary: #ffffff;
+
+  --color-bg-page: #f5f7fa;
+  --color-bg-surface: #ffffff;
+  --color-bg-subtle: #eef2f6;
+
+  --color-border: #d4dae0;
+  --color-border-strong: #a9b3be;
+
+  --radius-field: 4px;
+  --radius-button: 6px;
+  --radius-chip: 8px;
+  --radius-card-inner: 10px;
+  --radius-card: 12px;
+  --radius-container: 16px;
+  --radius-pill: 20px;
+
+  --shadow-sm: 0 1px 2px rgba(27, 39, 51, 0.06), 0 1px 3px rgba(27, 39, 51, 0.08);
+  --shadow-md: 0 2px 8px rgba(27, 39, 51, 0.1), 0 1px 3px rgba(27, 39, 51, 0.06);
+  --shadow-lg: 0 12px 32px rgba(27, 39, 51, 0.16);
+
+  --font-sans: var(--font-marianne), "Mulish", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-reading: var(--font-spectral), Georgia, "Times New Roman", serif;
+}
+
+:root {
+  color-scheme: light;
+}
+
+html {
+  background: var(--color-bg-page);
+}
+
+body {
+  background: var(--color-bg-page);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Anneau de focus visible et cohérent (accessibilité — DoD). */
+:where(a, button, input, textarea, select, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: 2px;
+}

@@ -1,0 +1,24 @@
+# Configuration gitleaks — CapClair
+# Étend les règles par défaut et écarte des faux positifs connus :
+#  - mots de passe de FIXTURES dans les fichiers de test (aucun secret réel) ;
+#  - identifiants de dev local (base Docker), non sensibles et documentés comme tels.
+
+title = "CapClair gitleaks"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Faux positifs : fixtures de test et identifiants de dev local"
+paths = [
+  '''.*\.test\.tsx?$''',
+  '''07-developpement/back/test/.*''',
+  '''07-developpement/back/\.env\.example$''',
+  '''07-developpement/front/\.env\.local\.example$''',
+  '''07-developpement/back/docker-compose\.yml$''',
+  '''\.github/workflows/.*''',
+]
+regexes = [
+  # Identifiants de la base Postgres de développement (docker-compose / .env.example).
+  '''capclair_dev''',
+]

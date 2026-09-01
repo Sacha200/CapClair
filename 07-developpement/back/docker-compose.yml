@@ -1,0 +1,76 @@
+# ============================================================================
+# CapClair — base de données de développement
+# ----------------------------------------------------------------------------
+# Port hôte 5434, car 5432 et 5433 sont déjà pris sur la machine de dev :
+# 5432 par le PostgreSQL 17 natif (service postgresql-x64-17), 5433 par le
+# conteneur sonarqube-db. Le conteneur reste sur 5432 en interne.
+#
+#   docker compose up -d      démarrer
+#   docker compose down       arrêter (les données survivent)
+#   docker compose down -v    arrêter ET supprimer les données
+#
+#   docker compose --profile app up -d    démarrer avec pgAdmin
+#
+# pgAdmin écoute sur http://localhost:5050 (PGADMIN_PORT) et lit ses
+# identifiants dans .env.
+# ============================================================================
+
+# Nom de projet fixe : le conteneur et le volume ont été créés quand ce fichier
+# vivait dans `07-developpement/db/` (projet « db »). On garde ce nom pour que
+# `docker compose` réutilise le conteneur `capclair-db` et le volume existants,
+# quel que soit le dossier d'où la commande est lancée.
+name: db
+
+services:
+  db:
+    image: postgres:17
+    container_name: capclair-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: capclair
+      POSTGRES_PASSWORD: capclair_dev
+      POSTGRES_DB: capclair
+      # Tri correct des accents (é, è, ç) via ICU plutôt qu'une locale système :
+      # l'image Debian ne génère que en_US.UTF-8, et la variante Alpine, basée
+      # sur musl, ne gère pas les locales du tout.
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale-provider=icu --icu-locale=fr-FR"
+    ports:
+      - "5434:5432"
+    volumes:
+      - capclair-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      # Prisma Migrate échoue si l'on attaque la base avant qu'elle accepte
+      # les connexions : ce test rend `up -d` réellement bloquant jusqu'au prêt.
+      test: ["CMD-SHELL", "pg_isready -U capclair -d capclair"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  # Profil "app" : ne démarre pas avec un simple `up -d`, l'image pesant 783 Mo
+  # pour un usage occasionnel. Lancer avec `docker compose --profile app up -d`.
+  #
+  # Depuis ce conteneur, la base est joignable en `db` sur le port 5432 — le
+  # réseau interne de Compose — et non `localhost:5434`, qui est le mappage
+  # côté hôte. C'est l'erreur classique au moment d'enregistrer le serveur.
+  pgadmin:
+    image: dpage/pgadmin4
+    profiles: ["app"]
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=${PGADMIN_DEFAULT_EMAIL:-admin@capclair.com}
+      - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_DEFAULT_PASSWORD}
+    ports:
+      - "${PGADMIN_PORT:-5050}:80"
+    volumes:
+      - capclair-pgadmin:/var/lib/pgadmin
+
+volumes:
+  capclair-pgdata:
+    name: capclair-pgdata
+  capclair-pgadmin:
+    name: capclair-pgadmin

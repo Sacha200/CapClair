@@ -1,4 +1,4 @@
-# DossierClair — Epics et user stories
+# CapClair — Epics et user stories
 
 **Version** : 1.0 — 21 juillet 2026
 **Statut** : à valider
@@ -386,7 +386,7 @@
 **Critères d'acceptation**
 
 1. Aucune fonctionnalité d'envoi vers un organisme n'existe dans l'application.
-2. Un texte explicite l'indique sur l'écran du brouillon : « DossierClair n'envoie aucun courrier. Vous restez maître de la transmission. »
+2. Un texte explicite l'indique sur l'écran du brouillon : « CapClair n'envoie aucun courrier. Vous restez maître de la transmission. »
 
 ---
 

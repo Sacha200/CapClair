@@ -1,4 +1,4 @@
-# DossierClair — Personas et besoins utilisateurs
+# CapClair — Personas et besoins utilisateurs
 
 **Version** : 1.0 — 21 juillet 2026
 **Statut** : cadrage — à valider

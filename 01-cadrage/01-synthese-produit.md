@@ -1,15 +1,15 @@
-# DossierClair — Synthèse produit
+# CapClair — Synthèse produit
 
 **Version** : 1.0
 **Date** : 21 juillet 2026
 **Statut** : cadrage — à valider
-**Source** : Plan du projet DossierClair (cahier des charges de référence)
+**Source** : Plan du projet CapClair (cahier des charges de référence)
 
 ---
 
 ## 1. En une phrase
 
-DossierClair transforme un courrier administratif difficile à lire en un dossier clair : ce qu'il faut comprendre, ce qu'il faut faire, ce qu'il faut fournir, et pour quand.
+CapClair transforme un courrier administratif difficile à lire en un dossier clair : ce qu'il faut comprendre, ce qu'il faut faire, ce qu'il faut fournir, et pour quand.
 
 ## 2. Le problème
 
@@ -36,7 +36,7 @@ Ce positionnement est une contrainte de conception, pas un avertissement décora
 
 ## 4. Proposition de valeur
 
-| Sans DossierClair | Avec DossierClair |
+| Sans CapClair | Avec CapClair |
 |---|---|
 | Un mur de texte | Un résumé en français simple |
 | "Il faut faire quelque chose" | Une liste d'actions cochables |
