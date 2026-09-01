@@ -41,11 +41,27 @@ export const EnvSchema = z.object({
   AUTH_FIXED_DELAY_MS: z.coerce.number().int().nonnegative().default(350),
   AUTH_FIXED_DELAY_JITTER_MS: z.coerce.number().int().nonnegative().default(40),
 
+  // Plafond global appliqué à TOUTES les routes (garde-fou anti-abus, US-8.1) ;
+  // les presets par route ci-dessous le resserrent sur les points sensibles.
+  RATE_LIMIT_GLOBAL_MAX: z.coerce.number().int().positive().default(1000),
+  RATE_LIMIT_GLOBAL_WINDOW: z.string().min(1).default("1 minute"),
+
   RATE_LIMIT_LOGIN_MAX: z.coerce.number().int().positive().default(5),
   RATE_LIMIT_LOGIN_WINDOW: z.string().min(1).default("15 minutes"),
   RATE_LIMIT_REGISTER_MAX: z.coerce.number().int().positive().default(10),
+  RATE_LIMIT_REGISTER_WINDOW: z.string().min(1).default("15 minutes"),
   RATE_LIMIT_FORGOT_MAX: z.coerce.number().int().positive().default(5),
+  RATE_LIMIT_FORGOT_WINDOW: z.string().min(1).default("15 minutes"),
   RATE_LIMIT_RESET_MAX: z.coerce.number().int().positive().default(10),
+  RATE_LIMIT_RESET_WINDOW: z.string().min(1).default("15 minutes"),
+
+  // Pré-provisionné pour les routes d'import (E2) et d'analyse IA (E3) : elles
+  // n'existent pas encore, mais le seuil est déjà configurable (US-8.1 AC1/AC3).
+  RATE_LIMIT_IMPORT_MAX: z.coerce.number().int().positive().default(20),
+  RATE_LIMIT_IMPORT_WINDOW: z.string().min(1).default("1 minute"),
+  RATE_LIMIT_ANALYSIS_MAX: z.coerce.number().int().positive().default(10),
+  RATE_LIMIT_ANALYSIS_WINDOW: z.string().min(1).default("1 minute"),
+
   RATE_LIMIT_REDIS: booleanish.default("false"),
   TRUST_PROXY: booleanish.default("false"),
 

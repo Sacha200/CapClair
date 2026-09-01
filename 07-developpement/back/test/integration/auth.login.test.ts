@@ -58,5 +58,9 @@ describe("POST /auth/login", () => {
     }
     const sixth = await attempt();
     expect(sixth.statusCode).toBe(429);
+    // US-8.1 AC2 : enveloppe standard + message FR indiquant le délai d'attente.
+    expect(sixth.json().code).toBe("rate_limited");
+    expect(sixth.json().error).toMatch(/^Trop de tentatives\. Réessayez dans .+\.$/);
+    expect(sixth.headers["retry-after"]).toBeDefined();
   });
 });

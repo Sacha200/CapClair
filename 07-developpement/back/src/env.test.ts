@@ -25,6 +25,9 @@ describe("EnvSchema", () => {
       expect(result.data.SESSION_TTL_HOURS).toBe(168);
       expect(result.data.COOKIE_SECURE).toBe(true);
       expect(result.data.RATE_LIMIT_LOGIN_MAX).toBe(5);
+      expect(result.data.RATE_LIMIT_GLOBAL_MAX).toBe(1000);
+      expect(result.data.RATE_LIMIT_IMPORT_MAX).toBe(20);
+      expect(result.data.RATE_LIMIT_ANALYSIS_MAX).toBe(10);
     }
   });
 
