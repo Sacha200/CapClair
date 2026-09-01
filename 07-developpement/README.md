@@ -88,8 +88,9 @@ Docker démarrée :
 - **`contract/`** : schémas Zod d'auth (register/login/forgot/reset, messages FR),
   enveloppe d'erreur, chemins d'endpoints. Buildé (`dist/`).
 - **`back/`** : Fastify + module d'authentification complet (E1), `GET /api/sante`,
-  couche d'accès scopée `userId`, rate-limit par route, config validée au boot.
-  26 tests unitaires verts ; 7 suites d'intégration (nécessitent la base Docker).
+  couche d'accès scopée `userId`, rate-limit global + presets par route
+  (`server/http/rate-limit.ts`, seuils par env — US-8.1), config validée au boot.
+  Tests unitaires verts ; suites d'intégration (nécessitent la base Docker).
 - **`front/`** : Next.js 16 + Tailwind v4 (thème du design system, clair uniquement),
   écran 01 (connexion / inscription), pages mot-de-passe-oublié / réinitialiser,
   middleware + garde serveur de l'espace connecté, pages 404/500. `next build` OK.

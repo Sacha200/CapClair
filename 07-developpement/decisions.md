@@ -200,3 +200,59 @@ Next **16** + React **19** + Tailwind **v4** (config CSS-first via `@theme`).
 - Polices : **Spectral** (lecture) via `next/font/google` ; **Marianne** substituée
   par **Mulish** en attendant les fichiers officiels et la validation de licence
   (la variable CSS reste `--font-marianne`).
+
+---
+
+## ADR-009 — Limitation de débit : plafond global + presets par route
+
+**Date** : sprint 1 (US-8.1).
+**Statut** : acté.
+
+**Contexte.** US-8.1 impose une limitation de débit sur `connexion`, `inscription`,
+`réinitialisation`, `import` et `analyse`, un `429` avec message français indiquant
+le délai, et des seuils **configurables par variable d'environnement**. À l'amorçage
+E1, `@fastify/rate-limit` était enregistré avec `global: false` : seules les routes
+`/auth/*` portant un `config.rateLimit` étaient couvertes ; les routes d'import (E2)
+et d'analyse (E3) n'existent pas encore.
+
+**Décision.**
+- **Plafond global** (`global: true`, `RATE_LIMIT_GLOBAL_MAX` / `_WINDOW`,
+  défaut 1000 / minute / IP) : garde-fou anti-abus sur **toutes** les routes,
+  présentes et futures. Clé = `request.ip` (dépend de `TRUST_PROXY`).
+- **Presets par domaine** dans `back/src/server/http/rate-limit.ts`
+  (`RATE_LIMITS.{login,register,forgot,reset,import,analysis}`) : chacun resserre
+  le plafond global ; **tous** les seuils (max *et* fenêtre) viennent de l'env.
+- `import` et `analysis` sont **pré-provisionnés** : les variables et le preset
+  existent ; à la création des routes en E2/E3, il suffit d'ajouter
+  `config: RATE_LIMITS.import` (resp. `.analysis`). US-8.1 reste ouverte jusque-là.
+- **Réponse `429`** : `errorResponseBuilder` renvoie l'enveloppe standard
+  `{ error, code: "rate_limited" }` — `error` = « Trop de tentatives. Réessayez
+  dans <délai>. » ; en-tête `Retry-After` posé par le plugin.
+
+**Conséquences.**
+- Store **mémoire** par défaut (mono-instance) ; `RATE_LIMIT_REDIS=true` +
+  `REDIS_URL` pour un déploiement multi-instances (à câbler avec US-10.3).
+- Les tests d'intégration partagent une instance d'app : le store n'est pas remis
+  à zéro entre tests. Le plafond global (1000) reste hors de portée du volume de
+  la suite ; les tests de limite ciblent une IP dédiée.
+
+---
+
+## ADR-010 — `.env.example` : fichiers d'exemple suivis par Git (front + back)
+
+**Date** : sprint 1 (US-8.4).
+**Statut** : acté.
+
+**Contexte.** US-8.4 AC2 exige « un fichier `.env.example` qui liste toutes les
+variables requises, sans valeur réelle ». Le `.gitignore` du `front/` généré par
+`create-next-app` contient `.env*`, qui **exclut aussi** `.env.local.example` :
+le fichier existait sur disque mais n'était pas versionné.
+
+**Décision.** Aligner le `front/` sur le `back/` : `.gitignore` ignore `.env` et
+`.env.*` mais **ré-inclut** `!.env.local.example`. Les secrets locaux
+(`.env`, `.env.local`) restent exclus ; seul l'exemple, sans valeur réelle, est
+suivi. Les deux exemples sont allowlistés dans `.gitleaks.toml` (AC1).
+
+**Conséquences.** `back/.env.example` et `front/.env.local.example` sont la source
+de vérité des variables attendues ; le scan `gitleaks` en CI (job `secret-scan`,
+bloquant) garantit AC1, la validation au boot (`back/src/env.ts`) garantit AC3.

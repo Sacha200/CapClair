@@ -2,12 +2,11 @@
  * Routes d'authentification (préfixe `/auth`, hors scope `/api` donc non gardées).
  *
  * Chaque route valide son entrée avec le schéma Zod du contrat. Les limites de
- * débit (US-8.1) sont posées par route via `config.rateLimit` — seuils issus de
- * l'environnement.
+ * débit (US-8.1) sont posées par route via `config: RATE_LIMITS.*` — seuils
+ * issus de l'environnement (voir `server/http/rate-limit.ts`).
  */
 import type { FastifyPluginAsync } from "fastify";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
-import { env } from "../../env.js";
 import { AUTH_MESSAGES } from "./auth.dto.js";
 import {
   ForgotInputSchema,
@@ -17,6 +16,7 @@ import {
 } from "./auth.dto.js";
 import * as authService from "./auth.service.js";
 import { SESSION_COOKIE, clearSessionCookie, setSessionCookie } from "../../server/auth/cookies.js";
+import { RATE_LIMITS } from "../../server/http/rate-limit.js";
 
 export const authRoutes: FastifyPluginAsync = async (fastify) => {
   const app = fastify.withTypeProvider<ZodTypeProvider>();
@@ -24,7 +24,7 @@ export const authRoutes: FastifyPluginAsync = async (fastify) => {
   app.post(
     "/auth/register",
     {
-      config: { rateLimit: { max: env.RATE_LIMIT_REGISTER_MAX, timeWindow: "15 minutes" } },
+      config: RATE_LIMITS.register,
       schema: { body: RegisterInputSchema },
     },
     async (request, reply) => {
@@ -37,9 +37,7 @@ export const authRoutes: FastifyPluginAsync = async (fastify) => {
   app.post(
     "/auth/login",
     {
-      config: {
-        rateLimit: { max: env.RATE_LIMIT_LOGIN_MAX, timeWindow: env.RATE_LIMIT_LOGIN_WINDOW },
-      },
+      config: RATE_LIMITS.login,
       schema: { body: LoginInputSchema },
     },
     async (request, reply) => {
@@ -66,7 +64,7 @@ export const authRoutes: FastifyPluginAsync = async (fastify) => {
   app.post(
     "/auth/password/forgot",
     {
-      config: { rateLimit: { max: env.RATE_LIMIT_FORGOT_MAX, timeWindow: "15 minutes" } },
+      config: RATE_LIMITS.forgot,
       schema: { body: ForgotInputSchema },
     },
     async (request, reply) => {
@@ -78,7 +76,7 @@ export const authRoutes: FastifyPluginAsync = async (fastify) => {
   app.post(
     "/auth/password/reset",
     {
-      config: { rateLimit: { max: env.RATE_LIMIT_RESET_MAX, timeWindow: "15 minutes" } },
+      config: RATE_LIMITS.reset,
       schema: { body: ResetInputSchema },
     },
     async (request, reply) => {

@@ -38,16 +38,19 @@ export async function buildApp() {
 
   await app.register(helmet, { contentSecurityPolicy: false });
   await app.register(cookie);
+  // Limitation de débit (US-8.1). Plafond global = garde-fou anti-abus sur
+  // TOUTES les routes (y compris celles d'import/analyse à venir) ; les routes
+  // sensibles le resserrent via `config: RATE_LIMITS.*` (voir server/http/rate-limit).
   await app.register(rateLimit, {
-    global: false,
-    max: 1000,
-    timeWindow: "1 minute",
+    global: true,
+    max: env.RATE_LIMIT_GLOBAL_MAX,
+    timeWindow: env.RATE_LIMIT_GLOBAL_WINDOW,
     keyGenerator: (request) => request.ip,
+    // Enveloppe d'erreur standard `{ error, code }` + délai d'attente en français.
     errorResponseBuilder: (_request, context) => ({
       statusCode: 429,
-      error: "Too Many Requests",
       code: "rate_limited",
-      message: `Trop de tentatives. Réessayez dans ${context.after}.`,
+      error: `Trop de tentatives. Réessayez dans ${context.after}.`,
     }),
   });
 
