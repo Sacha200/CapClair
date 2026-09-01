@@ -44,10 +44,10 @@ export async function seedCaseGraph(client: PrismaClient, userId: string) {
       client.document.create({
         data: {
           caseFileId: caseFile.id,
-          filename: "courrier.pdf",
+          originalName: "courrier.pdf",
           mimeType: "application/pdf",
           sizeBytes: 1234,
-          storagePath: "/tmp/courrier.pdf",
+          storagePath: "fixtures/courrier.pdf",
         },
       }),
       client.extractedInformation.create({

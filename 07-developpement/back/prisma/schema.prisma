@@ -31,6 +31,8 @@ enum Organisme {
   CAF
   CPAM
   FRANCE_TRAVAIL
+  /// Dossier créé à l'import (E2) ; l'organisme n'est déterminé qu'à l'analyse (E3, US-3.3).
+  INDETERMINE
 }
 
 /// Modèle à 4 statuts (décision D9, confirmé au retest).
@@ -89,6 +91,9 @@ enum NotificationType {
 enum ConsentType {
   ANALYSE_IA
   CGU
+  /// Confirmation « ce document est fictif » (US-2.3 AC2). Renommage éventuel
+  /// ANALYSE_IA -> AI_PROCESSING reporté à E3/US-3.1 (ADR-006, ADR-015).
+  FICTIONAL_DOCUMENT
 }
 
 // ======================= AUTHENTIFICATION (Auth.js) =======================
@@ -204,13 +209,19 @@ model Document {
   caseFileId String
   caseFile   CaseFile @relation(fields: [caseFileId], references: [id], onDelete: Cascade)
 
-  filename    String
-  mimeType    String
-  sizeBytes   Int
-  storagePath String
+  /// Nom d'origine du fichier envoyé par l'utilisateur — en base uniquement,
+  /// jamais utilisé comme nom de fichier sur disque (US-2.1 AC4).
+  originalName String
+  /// Mime canonique déduit des octets (magic bytes), jamais le mime déclaré client.
+  mimeType     String
+  sizeBytes    Int
+  /// Chemin relatif sous STORAGE_DIR ; le basename est un UUID généré serveur.
+  storagePath  String
   /// Texte extrait du PDF. Barrière : pas d'appel IA si < 100 caractères utiles.
-  extractedText String? @db.Text
-  createdAt     DateTime @default(now())
+  extractedText     String? @db.Text
+  /// Hash du texte extrait — réutilisé comme clé de cache d'analyse IA (E3).
+  extractedTextHash String?
+  createdAt         DateTime @default(now())
 
   @@index([caseFileId])
 }

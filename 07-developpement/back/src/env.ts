@@ -41,6 +41,12 @@ export const EnvSchema = z.object({
   AUTH_FIXED_DELAY_MS: z.coerce.number().int().nonnegative().default(350),
   AUTH_FIXED_DELAY_JITTER_MS: z.coerce.number().int().nonnegative().default(40),
 
+  // --- Stockage & import de documents (E2, US-2.1) ---
+  // Relatif : résolu depuis la racine de `back/` (voir server/storage/index.ts).
+  // Absolu : utilisé tel quel (tests d'intégration -> dossier temporaire dédié).
+  STORAGE_DIR: z.string().min(1).default("storage"),
+  MAX_UPLOAD_BYTES: z.coerce.number().int().positive().default(10_485_760),
+
   // Plafond global appliqué à TOUTES les routes (garde-fou anti-abus, US-8.1) ;
   // les presets par route ci-dessous le resserrent sur les points sensibles.
   RATE_LIMIT_GLOBAL_MAX: z.coerce.number().int().positive().default(1000),

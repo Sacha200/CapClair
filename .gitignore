@@ -49,9 +49,10 @@ pids/
 *.pid
 
 # Courriers déposés par les utilisateurs — stockés hors racine web, jamais versionnés.
-# À ne pas confondre avec 05-courriers-fictifs/, qui est du corpus de démonstration.
-uploads/
-storage/
+# À ne pas confondre avec 05-courriers-fictifs/ (corpus de démo) ni avec
+# 07-developpement/back/src/server/storage/ (code source du module de stockage).
+07-developpement/back/uploads/
+07-developpement/back/storage/
 
 # ---- Déploiement ----
 .vercel/

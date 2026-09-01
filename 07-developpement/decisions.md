@@ -256,3 +256,81 @@ suivi. Les deux exemples sont allowlistés dans `.gitleaks.toml` (AC1).
 **Conséquences.** `back/.env.example` et `front/.env.local.example` sont la source
 de vérité des variables attendues ; le scan `gitleaks` en CI (job `secret-scan`,
 bloquant) garantit AC1, la validation au boot (`back/src/env.ts`) garantit AC3.
+
+---
+
+## ADR-011 — Import : création du `CaseFile` dès le dépôt ; `Organisme.INDETERMINE`
+
+**Date** : E2, PR-A (US-2.1).
+**Statut** : acté.
+
+**Contexte.** `Document.caseFileId` est NOT NULL et `CaseFile.organisme` / `.title`
+sont NOT NULL sans défaut, mais la détection de l'organisme est du ressort de E3
+(US-3.3). L'isolation des entités liées passe par `caseFile.userId` : un document
+doit donc être rattaché à un dossier appartenant à l'utilisateur dès sa création.
+
+**Décision.**
+- L'upload crée le `CaseFile` **et** le `Document` dans une **transaction unique**
+  (`DocumentRepository.createWithCase`) : un import réussi produit les deux lignes,
+  ou aucune.
+- Nouvelle valeur d'enum `Organisme.INDETERMINE` ; `title` = nom de fichier
+  nettoyé (`safeName`). E3 écrasera `organisme` / `title` à l'analyse.
+- **Un document ↔ un dossier** au MVP (`caseFileId` reste NOT NULL). Le retrait
+  avant analyse (`DELETE /api/documents/:id`) supprime le document, purge le
+  fichier disque (best-effort) et supprime le dossier s'il n'est pas encore
+  analysé (`analysisStatus = EN_ATTENTE`).
+
+**Conséquences.** Le re-import sans recréer le dossier (US-2.6 AC4) se fera via
+`POST /api/documents/:id/replace` (PR-B). La suppression de dossier d'E5 (US-5.5)
+réutilisera la purge disque des `Document` liés.
+
+---
+
+## ADR-012 — Stockage des fichiers : volume local, module `server/storage`
+
+**Date** : E2, PR-A (US-2.1 AC4/AC5).
+**Statut** : acté (MVP ; abstraction pour évoluer).
+
+**Contexte.** La doc d'archi (§11) laissait ouvert « volume local vs S3/MinIO »,
+avec une abstraction `storage/` prévue.
+
+**Décision.**
+- MVP : **volume local monté**, racine `STORAGE_DIR` (relative à `back/` ou
+  absolue), **hors de toute racine servie** — le back ne sert aucun fichier
+  statique ; en prod le reverse-proxy ne route que `/api/*` et `/auth/*` (ADR-005).
+  US-2.1 AC5 satisfait par construction.
+- Nom sur disque = **UUID généré serveur** + extension canonique (déduite des
+  magic bytes, jamais du mime déclaré client). `Document.storagePath` = le
+  basename seul ; `server/storage` ne résout jamais que `basename(storagePath)`
+  sous `STORAGE_DIR` (**anti path-traversal**).
+- Le nom d'origine ne vit qu'en base (`Document.originalName`, US-2.1 AC4),
+  nettoyé par `safeName` (retrait chemin / caractères de contrôle / guillemets).
+- API `saveDocument` / `openDocumentStream` / `deleteDocument` — remplaçable par
+  un backend S3/MinIO sans changer les appelants. **Pas d'antivirus au MVP.**
+
+**Conséquences.** Dimensionnement mémoire du conteneur `web` à prévoir
+(`@fastify/multipart` bufferise le fichier — jusqu'à `MAX_UPLOAD_BYTES` par
+requête). Les tests isolent `STORAGE_DIR` dans un dossier temporaire purgé en
+fin de suite (`test/setup.ts`).
+
+---
+
+## ADR-015 — `ConsentType` : `FICTIONAL_DOCUMENT` ajouté en E2 ; renommage reporté
+
+**Date** : E2, PR-A (US-2.3).
+**Statut** : acté. Complète **ADR-006**.
+
+**Contexte.** ADR-006 avait reporté la réconciliation de `ConsentType`
+(`ANALYSE_IA` / `CGU` en base vs `AI_PROCESSING` / `FICTIONAL_DOCUMENT` dans la
+doc et les user stories) « à US-2.3 et US-3.1 ».
+
+**Décision.** La migration E2 ajoute **uniquement** la valeur
+`ConsentType.FICTIONAL_DOCUMENT` (US-2.3 AC2). Le renommage
+`ANALYSE_IA -> AI_PROCESSING` reste **reporté à E3/US-3.1** (il touche du code de
+consentement IA qui n'existe pas encore). `ALTER TYPE ... ADD VALUE` est sûr en
+transaction ici : aucune ligne n'utilise la nouvelle valeur dans la migration
+(PG >= 12).
+
+**Conséquences.** L'endpoint `POST /api/documents/:id/confirm-fictional` qui
+écrit la ligne `ConsentLog { consentType: FICTIONAL_DOCUMENT }` est livré en
+PR-B.

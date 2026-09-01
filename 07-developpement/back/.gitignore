@@ -11,6 +11,7 @@ src/generated/
 .env.*
 !.env.example
 
-# Fichiers importés par les utilisateurs (jamais versionnés)
-uploads/
-storage/
+# Fichiers importés par les utilisateurs (jamais versionnés).
+# Ancré à la racine de back/ : ne masque PAS src/server/storage/ (code source).
+/uploads/
+/storage/
