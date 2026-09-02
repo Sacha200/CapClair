@@ -58,6 +58,9 @@ describe("GET /api/documents/:id/file", () => {
     expect(res.headers["content-type"]).toBe("application/pdf");
     expect(res.headers["content-disposition"]).toBe("inline");
     expect(res.headers["x-content-type-options"]).toBe("nosniff");
+    // Pas de directive `sandbox` : elle désactive le viewer PDF de Chrome
+    // (les plugins sont coupés dans un contexte sandboxé) → aperçu vide.
+    expect(res.headers["content-security-policy"]).toBe("default-src 'none'");
     expect(res.rawPayload).toEqual(bytes);
   });
 });

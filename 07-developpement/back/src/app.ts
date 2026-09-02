@@ -27,7 +27,7 @@ import { authGuard } from "./server/auth/guard.js";
 import { authRoutes } from "./features/auth/auth.routes.js";
 import { documentRoutes } from "./features/documents/index.js";
 import { healthRoutes } from "./features/health/health.routes.js";
-import { AUTH_MESSAGES } from "@capclair/contract";
+import { AUTH_MESSAGES, MAX_UPLOAD_BYTES } from "@capclair/contract";
 
 export async function buildApp() {
   const app = Fastify({
@@ -41,13 +41,14 @@ export async function buildApp() {
 
   await app.register(helmet, { contentSecurityPolicy: false });
   await app.register(cookie);
-  // Import de documents (US-2.1). `limits.fileSize` coupe le flux au plafond ;
+  // Import de documents (US-2.1). `limits.fileSize` coupe le flux au plafond
+  // du contrat partagé (source unique : le message 413 y est figé à « 10 Mo ») ;
   // `throwFileSizeLimit: false` laisse `part.file.truncated` se positionner
   // SANS lever d'erreur générique côté plugin — c'est `assertValidUpload` qui
   // décide et produit le message 413 exact (voir upload-validation.ts).
   await app.register(multipart, {
     throwFileSizeLimit: false,
-    limits: { fileSize: env.MAX_UPLOAD_BYTES, files: 1, fields: 4, parts: 6 },
+    limits: { fileSize: MAX_UPLOAD_BYTES, files: 1, fields: 4, parts: 6 },
   });
   // Limitation de débit (US-8.1). Plafond global = garde-fou anti-abus sur
   // TOUTES les routes (y compris celles d'import/analyse à venir) ; les routes

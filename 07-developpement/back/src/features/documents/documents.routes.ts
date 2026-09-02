@@ -60,6 +60,13 @@ export const documentRoutes: FastifyPluginAsync = async (fastify) => {
         // évite toute injection dans l'en-tête (voir safeName + plan E2 §12.11).
         .header("content-disposition", "inline")
         .header("x-content-type-options", "nosniff")
+        // Contenu contrôlé par l'utilisateur servi inline sous l'origine de
+        // l'app (Helmet ne pose pas de CSP globale) : `default-src 'none'`
+        // interdit tout chargement de sous-ressource si la réponse était
+        // interprétée comme un document. PAS de directive `sandbox` : elle
+        // désactive les plugins (spec HTML) et le viewer PDF de Chrome en est
+        // un — l'aperçu inline afficherait une page vide (vérifié).
+        .header("content-security-policy", "default-src 'none'")
         .header("cache-control", "private, no-store")
         .send(stream);
     },

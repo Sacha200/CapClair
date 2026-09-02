@@ -1,7 +1,7 @@
 /** US-2.1 — Import d'un fichier. */
 import { basename, join } from "node:path";
 import { existsSync } from "node:fs";
-import { DOCUMENT_MESSAGES } from "@capclair/contract";
+import { DOCUMENT_MESSAGES, MAX_UPLOAD_BYTES } from "@capclair/contract";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { env } from "../../src/env.js";
 import { getApp, sessionCookie } from "../helpers/app.js";
@@ -102,7 +102,7 @@ describe("POST /api/documents", () => {
     const app = await getApp();
     const cookie = await loginCookie("198.51.100.13");
 
-    const tooBig = Buffer.alloc(env.MAX_UPLOAD_BYTES + 1, 0x41);
+    const tooBig = Buffer.alloc(MAX_UPLOAD_BYTES + 1, 0x41);
     const res = await uploadBytes(app, tooBig, {
       cookie,
       remoteAddress: "198.51.100.13",

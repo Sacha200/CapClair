@@ -7,8 +7,8 @@
  * qui reçoit un fichier doit passer par elle plutôt que de dupliquer la
  * logique (plan E2, risque 12.1).
  */
+import { MAX_UPLOAD_BYTES } from "@capclair/contract";
 import { AppError } from "../../lib/errors.js";
-import { env } from "../../env.js";
 import { detectKind, type DetectedKind } from "../../lib/magic-bytes.js";
 import { DOCUMENT_MESSAGES } from "./documents.dto.js";
 
@@ -17,7 +17,7 @@ import { DOCUMENT_MESSAGES } from "./documents.dto.js";
  *   complète du flux (`part.toBuffer()`), jamais avant.
  */
 export function assertValidUpload(buffer: Buffer, truncated: boolean): DetectedKind {
-  if (truncated || buffer.length > env.MAX_UPLOAD_BYTES) {
+  if (truncated || buffer.length > MAX_UPLOAD_BYTES) {
     throw new AppError(413, DOCUMENT_MESSAGES.fileTooLarge, { code: "file_too_large" });
   }
 

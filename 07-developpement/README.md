@@ -95,8 +95,8 @@ Docker démarrée :
   global + presets par route (`server/http/rate-limit.ts`, seuils par env —
   US-8.1 ; `/api/documents` porte `RATE_LIMITS.import`), config validée au boot.
   Tests unitaires verts ; suites d'intégration (nécessitent la base Docker).
-  Nouvelles variables d'env : `STORAGE_DIR`, `MAX_UPLOAD_BYTES` (voir
-  `.env.example`) ; `back/storage/` est git-ignoré.
+  Nouvelle variable d'env : `STORAGE_DIR` (voir `.env.example` ; le plafond
+  d'upload vient du contrat partagé) ; `back/storage/` est git-ignoré.
 - **`front/`** : Next.js 16 + Tailwind v4 (thème du design system, clair uniquement),
   écran 01 (connexion / inscription), pages mot-de-passe-oublié / réinitialiser,
   middleware + garde serveur de l'espace connecté, pages 404/500. `next build` OK.

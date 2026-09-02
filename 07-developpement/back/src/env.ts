@@ -45,7 +45,10 @@ export const EnvSchema = z.object({
   // Relatif : résolu depuis la racine de `back/` (voir server/storage/index.ts).
   // Absolu : utilisé tel quel (tests d'intégration -> dossier temporaire dédié).
   STORAGE_DIR: z.string().min(1).default("storage"),
-  MAX_UPLOAD_BYTES: z.coerce.number().int().positive().default(10_485_760),
+  // Le plafond de taille d'upload n'est PAS une variable d'env : c'est
+  // `MAX_UPLOAD_BYTES` du contrat partagé (`@capclair/contract`), car le
+  // message d'erreur (« dépasse 10 Mo ») y est figé — une valeur configurable
+  // ferait mentir le message et divergerait du front.
 
   // Plafond global appliqué à TOUTES les routes (garde-fou anti-abus, US-8.1) ;
   // les presets par route ci-dessous le resserrent sur les points sensibles.
