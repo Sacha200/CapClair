@@ -85,12 +85,18 @@ Docker démarrée :
 
 ## État
 
-- **`contract/`** : schémas Zod d'auth (register/login/forgot/reset, messages FR),
-  enveloppe d'erreur, chemins d'endpoints. Buildé (`dist/`).
-- **`back/`** : Fastify + module d'authentification complet (E1), `GET /api/sante`,
-  couche d'accès scopée `userId`, rate-limit global + presets par route
-  (`server/http/rate-limit.ts`, seuils par env — US-8.1), config validée au boot.
+- **`contract/`** : schémas Zod d'auth + de documents (messages FR, chemins
+  d'endpoints, enveloppe d'erreur). Buildé (`dist/`).
+- **`back/`** : Fastify + authentification complète (E1), `GET /api/sante`,
+  **import de documents** (E2/PR-A : `POST /api/documents` validé par signature
+  (magic bytes) + taille, stockage local hors racine web sous `STORAGE_DIR` avec
+  nom UUID, aperçu authentifié `GET /api/documents/:id/file`, retrait
+  `DELETE /api/documents/:id`), couche d'accès scopée `userId`, rate-limit
+  global + presets par route (`server/http/rate-limit.ts`, seuils par env —
+  US-8.1 ; `/api/documents` porte `RATE_LIMITS.import`), config validée au boot.
   Tests unitaires verts ; suites d'intégration (nécessitent la base Docker).
+  Nouvelle variable d'env : `STORAGE_DIR` (voir `.env.example` ; le plafond
+  d'upload vient du contrat partagé) ; `back/storage/` est git-ignoré.
 - **`front/`** : Next.js 16 + Tailwind v4 (thème du design system, clair uniquement),
   écran 01 (connexion / inscription), pages mot-de-passe-oublié / réinitialiser,
   middleware + garde serveur de l'espace connecté, pages 404/500. `next build` OK.

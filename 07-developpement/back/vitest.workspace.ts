@@ -1,3 +1,5 @@
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { defineWorkspace } from "vitest/config";
 
 /** Environnement minimal injecté avant tout import (src/env.ts valide au chargement). */
@@ -13,6 +15,9 @@ const unitEnv = {
   ARGON2_MEMORY_KIB: "8192",
   ARGON2_TIME_COST: "1",
   ARGON2_PARALLELISM: "1",
+  // Dossier dédié aux tests unitaires de `server/storage` (E2) — jamais le
+  // volume de dev, jamais partagé avec les tests d'intégration.
+  STORAGE_DIR: join(tmpdir(), "capclair-vitest-unit-storage"),
 };
 
 export default defineWorkspace([

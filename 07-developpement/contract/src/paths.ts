@@ -9,3 +9,12 @@ export const AUTH_PATHS = {
 } as const;
 
 export const HEALTH_PATH = "/api/sante";
+
+/** Chemins des endpoints de documents (préfixe `/api`, scope gardé). */
+export const DOCUMENT_PATHS = {
+  UPLOAD: "/api/documents",
+  detail: (id: string) => `/api/documents/${id}`,
+  file: (id: string) => `/api/documents/${id}/file`,
+  replace: (id: string) => `/api/documents/${id}/replace`,
+  confirmFictional: (id: string) => `/api/documents/${id}/confirm-fictional`,
+} as const;

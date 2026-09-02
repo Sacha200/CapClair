@@ -41,6 +41,15 @@ export const EnvSchema = z.object({
   AUTH_FIXED_DELAY_MS: z.coerce.number().int().nonnegative().default(350),
   AUTH_FIXED_DELAY_JITTER_MS: z.coerce.number().int().nonnegative().default(40),
 
+  // --- Stockage & import de documents (E2, US-2.1) ---
+  // Relatif : résolu depuis la racine de `back/` (voir server/storage/index.ts).
+  // Absolu : utilisé tel quel (tests d'intégration -> dossier temporaire dédié).
+  STORAGE_DIR: z.string().min(1).default("storage"),
+  // Le plafond de taille d'upload n'est PAS une variable d'env : c'est
+  // `MAX_UPLOAD_BYTES` du contrat partagé (`@capclair/contract`), car le
+  // message d'erreur (« dépasse 10 Mo ») y est figé — une valeur configurable
+  // ferait mentir le message et divergerait du front.
+
   // Plafond global appliqué à TOUTES les routes (garde-fou anti-abus, US-8.1) ;
   // les presets par route ci-dessous le resserrent sur les points sensibles.
   RATE_LIMIT_GLOBAL_MAX: z.coerce.number().int().positive().default(1000),

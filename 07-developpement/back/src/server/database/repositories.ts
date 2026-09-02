@@ -9,7 +9,7 @@
  * Seul ce module (et `context.ts`) appelle Prisma directement ; `features/*` et
  * `server/auth/*` doivent passer par `context.forUser(...)` (règle ESLint).
  */
-import type { PrismaClient } from "../../generated/prisma/client.js";
+import type { Organisme, PrismaClient } from "../../generated/prisma/client.js";
 import { NotFoundError } from "../../lib/errors.js";
 
 /** Dossiers — filtrés directement sur `userId`, hors dossiers supprimés. */
@@ -33,6 +33,25 @@ export class CaseFileRepository {
     if (!row) throw new NotFoundError("caseFile");
     return row;
   }
+
+  /** Dossier créé à l'import (E2) : organisme/titre provisoires, écrasés à l'analyse (E3). */
+  create(data: { organisme: Organisme; title: string }) {
+    return this.prisma.caseFile.create({
+      data: { userId: this.userId, organisme: data.organisme, title: data.title },
+    });
+  }
+
+  /**
+   * Supprime le dossier s'il n'a pas encore été analysé (US-2.2 AC2, ADR-011).
+   * Aucun effet si le dossier n'existe pas, appartient à un autre compte, ou
+   * est déjà en cours/fin d'analyse — jamais d'erreur, juste `false`.
+   */
+  async deleteIfUnanalyzed(id: string): Promise<boolean> {
+    const result = await this.prisma.caseFile.deleteMany({
+      where: { id, userId: this.userId, analysisStatus: "EN_ATTENTE" },
+    });
+    return result.count > 0;
+  }
 }
 
 /** Base commune aux entités rattachées à un dossier (filtre via `caseFile.userId`). */
@@ -54,6 +73,44 @@ export class DocumentRepository extends LinkedRepository {
     });
     if (!row) throw new NotFoundError("document");
     return row;
+  }
+
+  /**
+   * Crée le dossier ET le document dans une même transaction (US-2.1) : un
+   * import réussi produit toujours les deux lignes, ou aucune des deux
+   * (atomicité — voir plan E2 §12.9). Un doc ↔ un dossier au MVP (ADR-011).
+   */
+  createWithCase(data: {
+    organisme: Organisme;
+    title: string;
+    originalName: string;
+    mimeType: string;
+    sizeBytes: number;
+    storagePath: string;
+  }) {
+    const userId = this.userId;
+    return this.prisma.$transaction(async (tx) => {
+      const caseFile = await tx.caseFile.create({
+        data: { userId, organisme: data.organisme, title: data.title },
+      });
+      const document = await tx.document.create({
+        data: {
+          caseFileId: caseFile.id,
+          originalName: data.originalName,
+          mimeType: data.mimeType,
+          sizeBytes: data.sizeBytes,
+          storagePath: data.storagePath,
+        },
+      });
+      return { caseFile, document };
+    });
+  }
+
+  /** Scopé ; renvoie le `storagePath` pour la purge disque (best-effort, côté service). */
+  async deleteForUser(id: string): Promise<{ storagePath: string; caseFileId: string }> {
+    const existing = await this.findByIdForUser(id); // NotFoundError si absent/autre compte
+    await this.prisma.document.delete({ where: { id: existing.id } });
+    return { storagePath: existing.storagePath, caseFileId: existing.caseFileId };
   }
 }
 

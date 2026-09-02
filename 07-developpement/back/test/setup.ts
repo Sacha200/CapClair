@@ -3,11 +3,16 @@
  *
  * - force `DATABASE_URL` sur la base de test (les workers en héritent : le
  *   singleton Prisma de l'app tourne donc sur la base jetable) ;
- * - applique les migrations une fois pour toute la suite.
+ * - applique les migrations une fois pour toute la suite ;
+ * - isole `STORAGE_DIR` (E2) dans un dossier temporaire propre à ce run,
+ *   purgé en fin de suite — jamais le volume de dev, jamais partagé entre runs.
  */
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { migrateTestDatabase, resolveTestDatabaseUrl } from "./helpers/testDb.js";
 
-export default function setup(): void {
+export default function setup(): () => void {
   const url = resolveTestDatabaseUrl();
   process.env.NODE_ENV = "test";
   process.env.DATABASE_URL = url;
@@ -21,4 +26,11 @@ export default function setup(): void {
   process.env.AUTH_FIXED_DELAY_MS ??= "400";
   process.env.AUTH_FIXED_DELAY_JITTER_MS ??= "20";
   migrateTestDatabase(url);
+
+  const storageDir = mkdtempSync(join(tmpdir(), "capclair-it-storage-"));
+  process.env.STORAGE_DIR = storageDir;
+
+  return () => {
+    rmSync(storageDir, { recursive: true, force: true });
+  };
 }
