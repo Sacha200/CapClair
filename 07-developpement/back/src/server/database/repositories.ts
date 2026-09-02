@@ -9,7 +9,12 @@
  * Seul ce module (et `context.ts`) appelle Prisma directement ; `features/*` et
  * `server/auth/*` doivent passer par `context.forUser(...)` (règle ESLint).
  */
-import type { ConsentType, Organisme, PrismaClient } from "../../generated/prisma/client.js";
+import type {
+  AnalysisStatus,
+  ConsentType,
+  Organisme,
+  PrismaClient,
+} from "../../generated/prisma/client.js";
 import { NotFoundError } from "../../lib/errors.js";
 
 /** Dossiers — filtrés directement sur `userId`, hors dossiers supprimés. */
@@ -51,6 +56,26 @@ export class CaseFileRepository {
       where: { id, userId: this.userId, analysisStatus: "EN_ATTENTE" },
     });
     return result.count > 0;
+  }
+
+  /**
+   * Prépare un dossier à (ré)analyse (US-3.1 AC3, D8). Autorisé depuis
+   * `EN_ATTENTE` (jamais analysé) ou `ECHEC` (relance, plan E3 §7) ; refusé
+   * depuis `EN_COURS`/`TERMINEE` → la route répond 409. Repositionne le statut
+   * à `EN_ATTENTE` pour que le worker reparte proprement.
+   */
+  async requeueForAnalysis(
+    id: string,
+  ): Promise<{ queued: true } | { queued: false; status: AnalysisStatus }> {
+    const caseFile = await this.findByIdForUser(id); // 404 si absent/autre compte
+    if (caseFile.analysisStatus === "EN_COURS" || caseFile.analysisStatus === "TERMINEE") {
+      return { queued: false, status: caseFile.analysisStatus };
+    }
+    await this.prisma.caseFile.updateMany({
+      where: { id, userId: this.userId, deletedAt: null },
+      data: { analysisStatus: "EN_ATTENTE" },
+    });
+    return { queued: true };
   }
 }
 

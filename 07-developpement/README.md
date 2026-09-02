@@ -29,13 +29,13 @@ npm run build --workspace @capclair/contract # à faire avant back/front
 # --- base de données (Docker) ---
 cd back
 cp .env.example .env                         # renseigner les variables
-npm run db:up                                # Postgres 17 sur le port hôte 5434
+npm run db:up                                # Postgres 17 (5434) + Redis 7 (6379)
 npm run prisma:deploy                        # applique les migrations + 6 catégories
 createdb ... capclair_test  # OU : psql "$DATABASE_URL" -c 'CREATE DATABASE capclair_test;'
 
 # --- lancer ---
 npm run dev            # API sur http://localhost:3001  (GET /api/sante)
-npm run worker         # worker BullMQ (aucune queue pour l'instant)
+npm run worker         # worker BullMQ (file « analysis » — analyse IA, E3)
 cd ../front
 cp .env.local.example .env.local
 npm run dev            # UI sur http://localhost:3000
@@ -113,11 +113,19 @@ Docker démarrée :
   classification d'organisme par heuristique de mots-clés
   (`server/ai/prompts.ts`, 15/15 sur le corpus) ; règles déterministes de date
   (`lib/dates.ts`, D7 — dates/délais jamais calculés par l'IA). Contrat :
-  `contract/src/analysis.ts` (schéma à 13 champs, US-3.2). Reste à brancher :
-  consentement `AI_PROCESSING`, file BullMQ, worker, routes de dossier (PR-B),
-  écran de consentement + attente (PR-C) — voir
-  `plans/E3-consentement-et-appel-a-l-ia.md`. Nouvelle variable obligatoire :
-  `ANTHROPIC_API_KEY` (aucun défaut, US-8.4).
+  `contract/src/analysis.ts` (schéma à 13 champs, US-3.2).
+  **PR-B** : consentement `AI_PROCESSING` (`POST /api/dossiers/:id/consentement-ia`,
+  miroir de `confirm-fictional`), déclenchement asynchrone
+  (`POST /api/dossiers/:id/analyser` → 202/`EN_ATTENTE`, 403 sans consentement,
+  409 si déjà en cours) et polling (`GET /api/dossiers/:id`) —
+  `features/cases/*`, `RATE_LIMITS.analysis` ; file BullMQ `analysis`
+  (`server/queues/analysis.ts`, payload = id du dossier seul, US-8.2) ; worker
+  (`worker/analysis.ts` — `runAnalysisJob` : `EN_COURS` → IA (relance ×1 si
+  schéma invalide) → `lib/dates` → transaction `applyAnalysis` idempotente
+  préservant les lignes corrigées → `TERMINEE` ; toute erreur → `ECHEC` +
+  `AuditEvent` sans contenu de courrier). Reste : écran de consentement +
+  attente (PR-C) — voir `plans/E3-consentement-et-appel-a-l-ia.md`. Nouvelle
+  variable obligatoire : `ANTHROPIC_API_KEY` (aucun défaut, US-8.4).
 - **`front/`** : Next.js 16 + Tailwind v4 (thème du design system, clair uniquement),
   écran 01 (connexion / inscription), pages mot-de-passe-oublié / réinitialiser,
   middleware + garde serveur de l'espace connecté, pages 404/500. `next build` OK.

@@ -123,3 +123,46 @@ export function deriveDeadline(input: DeriveDeadlineInput): ResolvedDeadline | n
     sourceExcerpt: echeance.sourceExcerpt,
   };
 }
+
+export interface DeriveDeadlineFromTextInput {
+  /** Passage textuel du délai propre à l'item (`ActionIA.dueDateRawText`) — `null` si absent. */
+  rawText: string | null;
+  /** Extrait littéral rattaché à l'item, conservé pour la traçabilité. */
+  sourceExcerpt: string;
+  documentDate: Date | null;
+  fallbackAnchor: Date;
+}
+
+/**
+ * Variante de `deriveDeadline` pour les échéances dont l'IA ne qualifie pas le
+ * type (délai d'une action, US-3.5) : le type est **inféré** — une date
+ * française explicite reconnue → EXPLICITE, sinon tentative de délai relatif.
+ * `null` si `rawText` est absent ou si rien n'est résolu (jamais d'invention).
+ */
+export function deriveDeadlineFromText(
+  input: DeriveDeadlineFromTextInput,
+): ResolvedDeadline | null {
+  const { rawText, sourceExcerpt, documentDate, fallbackAnchor } = input;
+  if (!rawText || rawText.trim().length === 0) return null;
+
+  const explicit = parseExplicitFrenchDate(rawText);
+  if (explicit) {
+    const coherent = !documentDate || explicit.getTime() >= documentDate.getTime();
+    return {
+      date: coherent ? explicit : null,
+      type: "EXPLICITE",
+      confidence: coherent ? "ELEVE" : "FAIBLE",
+      sourceExcerpt,
+    };
+  }
+
+  const anchor = documentDate ?? fallbackAnchor;
+  const computed = resolveRelativeDelay(anchor, rawText);
+  if (!computed) return null;
+  return {
+    date: computed,
+    type: "RELATIVE",
+    confidence: documentDate ? "MOYEN" : "FAIBLE",
+    sourceExcerpt,
+  };
+}

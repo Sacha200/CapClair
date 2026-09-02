@@ -1,6 +1,20 @@
 # Plan d'implémentation — Epic E3 « Consentement et appel à l'IA »
 
-Statut : **à démarrer** (PR-A à venir) · Prérequis : E1 (auth) + E2 (import/lecture) fusionnés sur `main`.
+Statut : **PR-A fusionnée** (#67) · **PR-B implémentée** (branche `feat/e3-ai-contract-client`) ·
+PR-C à venir · Prérequis : E1 (auth) + E2 (import/lecture) fusionnés sur `main`.
+
+Écarts PR-B (vs §6/§8/§10) :
+- **Accès BDD du worker** : `server/database/analysis-store.ts` (couche **système**, non scopée
+  `userId`) plutôt que des méthodes ajoutées à `CaseFileRepository` (scopé). Raison : le worker n'a
+  pas d'utilisateur courant ; la route (`features/cases`) reste scopée et vérifie propriété +
+  consentement avant d'enfiler. Seul `requeueForAnalysis` est ajouté à `CaseFileRepository` (garde
+  409 / relance après ECHEC).
+- **Test du worker** : `runAnalysisJob()` appelé en direct (`analysis.worker.test.ts`), `analyzeLetter`
+  mocké — pas de `Worker` BullMQ ni de Redis dans `test/setup.ts`. La route `202/EN_ATTENTE` est testée
+  avec la file mockée (`cases.analyze.test.ts`). Redis reste ajouté à `docker-compose.yml` pour le
+  worker en local.
+- `lib/dates.ts` gagne `deriveDeadlineFromText` (type d'échéance **inféré**) pour les délais d'action,
+  que l'IA ne qualifie pas (US-3.5, `ActionIA.dueDateRawText` sans `type`).
 Modèle IA retenu avec l'utilisateur : **Claude Sonnet 5** (`claude-sonnet-5`, $2/$10 par Mtok) — rapport
 qualité/coût adapté à une extraction structurée sur texte court ; Opus 5 reste un repli si la précision
 sur le corpus s'avère insuffisante (voir §9, risque 9.5).

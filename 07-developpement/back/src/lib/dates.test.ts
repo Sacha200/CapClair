@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import type { EcheanceIA } from "@capclair/contract";
-import { deriveDeadline, parseExplicitFrenchDate, resolveRelativeDelay } from "./dates.js";
+import {
+  deriveDeadline,
+  deriveDeadlineFromText,
+  parseExplicitFrenchDate,
+  resolveRelativeDelay,
+} from "./dates.js";
 
 const utc = (y: number, m: number, d: number) => new Date(Date.UTC(y, m - 1, d));
 
@@ -123,5 +128,62 @@ describe("deriveDeadline (US-3.6)", () => {
 
   it("aucune échéance → null", () => {
     expect(deriveDeadline({ echeance: null, documentDate, fallbackAnchor })).toBeNull();
+  });
+});
+
+describe("deriveDeadlineFromText (délai d'action, US-3.5 — type inféré)", () => {
+  // Ancres en juillet/août : fenêtre sans bascule d'heure d'été (comme les
+  // tests `resolveRelativeDelay` ci-dessus), `date-fns` opérant en heure locale.
+  const documentDate = utc(2026, 7, 3);
+  const fallbackAnchor = utc(2026, 7, 10);
+
+  it("rawText absent → null", () => {
+    expect(
+      deriveDeadlineFromText({ rawText: null, sourceExcerpt: "…", documentDate, fallbackAnchor }),
+    ).toBeNull();
+  });
+
+  it("date explicite reconnue → EXPLICITE / ELEVE", () => {
+    const r = deriveDeadlineFromText({
+      rawText: "avant le 5 septembre 2026",
+      sourceExcerpt: "extrait",
+      documentDate,
+      fallbackAnchor,
+    });
+    expect(r).toMatchObject({ type: "EXPLICITE", confidence: "ELEVE", sourceExcerpt: "extrait" });
+    expect(r?.date).toEqual(utc(2026, 9, 5));
+  });
+
+  it("délai relatif + date du courrier connue → RELATIVE / MOYEN, calculé depuis la date du courrier", () => {
+    const r = deriveDeadlineFromText({
+      rawText: "sous 30 jours",
+      sourceExcerpt: "…",
+      documentDate,
+      fallbackAnchor,
+    });
+    expect(r).toMatchObject({ type: "RELATIVE", confidence: "MOYEN" });
+    expect(r?.date).toEqual(utc(2026, 8, 2));
+  });
+
+  it("délai relatif sans date du courrier → repli sur l'ancre d'import, confiance FAIBLE", () => {
+    const r = deriveDeadlineFromText({
+      rawText: "sous 30 jours",
+      sourceExcerpt: "…",
+      documentDate: null,
+      fallbackAnchor,
+    });
+    expect(r).toMatchObject({ type: "RELATIVE", confidence: "FAIBLE" });
+    expect(r?.date).toEqual(utc(2026, 8, 9));
+  });
+
+  it("ni date ni délai reconnus → null", () => {
+    expect(
+      deriveDeadlineFromText({
+        rawText: "dès que possible",
+        sourceExcerpt: "…",
+        documentDate,
+        fallbackAnchor,
+      }),
+    ).toBeNull();
   });
 });

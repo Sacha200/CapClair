@@ -1,2 +1,1 @@
-/** Module cases — stub, à implémenter dans un sprint ultérieur. */
-export {};
+export { caseRoutes } from "./cases.routes.js";

@@ -26,7 +26,9 @@ import { AppError } from "./lib/errors.js";
 import { authGuard } from "./server/auth/guard.js";
 import { authRoutes } from "./features/auth/auth.routes.js";
 import { documentRoutes } from "./features/documents/index.js";
+import { caseRoutes } from "./features/cases/index.js";
 import { healthRoutes } from "./features/health/health.routes.js";
+import { closeAnalysisQueue } from "./server/queues/analysis.js";
 import { AUTH_MESSAGES, MAX_UPLOAD_BYTES } from "@capclair/contract";
 
 export async function buildApp() {
@@ -123,6 +125,13 @@ export async function buildApp() {
     secured.get("/api/_ping", async (request) => ({ ok: true, userId: request.user?.id }));
 
     await secured.register(documentRoutes); // US-2.1/US-2.2
+    await secured.register(caseRoutes); // US-3.1 (consentement IA + déclenchement)
+  });
+
+  // La file BullMQ est ouverte paresseusement au premier enfilement ; on la
+  // referme à l'arrêt du serveur pour ne pas laisser fuiter une connexion Redis.
+  app.addHook("onClose", async () => {
+    await closeAnalysisQueue();
   });
 
   return app;
