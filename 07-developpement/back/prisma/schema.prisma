@@ -89,10 +89,11 @@ enum NotificationType {
 }
 
 enum ConsentType {
-  ANALYSE_IA
+  /// Consentement à l'envoi du texte extrait à un prestataire d'IA externe
+  /// (US-3.1). Renommé depuis ANALYSE_IA (ADR-006, ADR-015, ADR-017).
+  AI_PROCESSING
   CGU
-  /// Confirmation « ce document est fictif » (US-2.3 AC2). Renommage éventuel
-  /// ANALYSE_IA -> AI_PROCESSING reporté à E3/US-3.1 (ADR-006, ADR-015).
+  /// Confirmation « ce document est fictif » (US-2.3 AC2).
   FICTIONAL_DOCUMENT
 }
 
@@ -184,6 +185,13 @@ model CaseFile {
   mainDeadlineConfidence    ConfidenceLevel?
 
   summary        String?   @db.Text
+  /// Ancre du calcul des délais relatifs (D7) ; traçabilité de l'origine.
+  /// Absente pour certains courriers (repli sur la date d'import, confiance FAIBLE).
+  documentDate              DateTime?
+  documentDateSourceExcerpt String?
+  /// US-3.2 champ 13/13 — avertissements spécifiques au courrier (ex. « suspension
+  /// possible du versement »), distincts de l'avertissement fixe de l'écran (US-4.1 AC3).
+  warnings       String[]  @default([])
   lastActivityAt DateTime  @default(now())
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
