@@ -35,7 +35,7 @@ export function DocumentPreview({ id, kind }: { id: string; kind: DocumentKind }
         src={src}
         title="Aperçu du document"
         onError={() => setFailed(true)}
-        className="h-full min-h-[420px] w-full rounded-[var(--radius-card)] border border-border bg-bg-subtle"
+        className="h-full min-h-[420px] w-full rounded-[var(--radius-card-inner)] border border-border-strong bg-bg-subtle"
       />
     );
   }
@@ -46,7 +46,7 @@ export function DocumentPreview({ id, kind }: { id: string; kind: DocumentKind }
       src={src}
       alt="Aperçu du document importé"
       onError={() => setFailed(true)}
-      className="max-h-[520px] w-full rounded-[var(--radius-card)] border border-border object-contain"
+      className="max-h-[520px] w-full rounded-[var(--radius-card-inner)] border border-border-strong object-contain"
     />
   );
 }
