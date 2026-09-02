@@ -14,6 +14,7 @@ import type { PrismaClient } from "./client.js";
 import {
   ActionItemRepository,
   CaseFileRepository,
+  ConsentLogRepository,
   DocumentRepository,
   ExtractedInformationRepository,
   ReminderRepository,
@@ -25,6 +26,7 @@ export interface UserScopedDb {
   readonly userId: string;
   readonly caseFiles: CaseFileRepository;
   readonly documents: DocumentRepository;
+  readonly consentLogs: ConsentLogRepository;
   readonly extractedInfos: ExtractedInformationRepository;
   readonly actionItems: ActionItemRepository;
   readonly requiredDocs: RequiredDocumentRepository;
@@ -37,6 +39,7 @@ export function forUser(userId: string, client: PrismaClient = defaultPrisma): U
     userId,
     caseFiles: new CaseFileRepository(client, userId),
     documents: new DocumentRepository(client, userId),
+    consentLogs: new ConsentLogRepository(client, userId),
     extractedInfos: new ExtractedInformationRepository(client, userId),
     actionItems: new ActionItemRepository(client, userId),
     requiredDocs: new RequiredDocumentRepository(client, userId),

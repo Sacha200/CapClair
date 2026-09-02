@@ -15,6 +15,7 @@ import { requireUser } from "../../server/auth/guard.js";
 import { AppError } from "../../lib/errors.js";
 import * as documentsService from "./documents.service.js";
 import { toDocumentMetadataDto, toUploadResponseDto } from "./documents.mapper.js";
+import { ConfirmFictionalInputSchema } from "./documents.dto.js";
 
 const IdParamsSchema = z.object({ id: z.string().uuid() });
 
@@ -35,6 +36,42 @@ export const documentRoutes: FastifyPluginAsync = async (fastify) => {
     });
     return reply.code(201).send(toUploadResponseDto(result));
   });
+
+  // Remplacement (US-2.2 AC2, US-2.6 AC4) : même document, même dossier —
+  // permet la transition « illisible → lisible » sans recréer le dossier.
+  app.post(
+    "/api/documents/:id/replace",
+    { config: RATE_LIMITS.import, schema: { params: IdParamsSchema } },
+    async (request, reply) => {
+      const part = await request.file();
+      if (!part) {
+        throw new AppError(400, "Aucun fichier reçu.", { code: "validation" });
+      }
+      const buffer = await part.toBuffer();
+      const db = forUser(requireUser(request).id);
+      const result = await documentsService.replaceDocument(db, request.params.id, {
+        buffer,
+        truncated: part.file.truncated,
+        filename: part.filename,
+      });
+      return reply.code(200).send(toUploadResponseDto(result));
+    },
+  );
+
+  // Consentement « document fictif » (US-2.3 AC2) : `confirmed` doit être
+  // littéralement `true` (schéma du contrat) — `false` échoue en validation.
+  app.post(
+    "/api/documents/:id/confirm-fictional",
+    {
+      config: RATE_LIMITS.import,
+      schema: { params: IdParamsSchema, body: ConfirmFictionalInputSchema },
+    },
+    async (request) => {
+      const db = forUser(requireUser(request).id);
+      await documentsService.confirmFictional(db, request.params.id);
+      return { ok: true };
+    },
+  );
 
   app.get(
     "/api/documents/:id",

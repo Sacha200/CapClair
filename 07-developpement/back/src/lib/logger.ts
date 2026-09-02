@@ -8,7 +8,7 @@
 import { pino } from "pino";
 import { env, isProd, isTest } from "../env.js";
 
-const redactPaths = [
+export const redactPaths = [
   "req.headers.cookie",
   "req.headers.authorization",
   "res.headers['set-cookie']",
@@ -23,6 +23,16 @@ const redactPaths = [
   "passwordHash",
   "token",
   "sessionToken",
+  // US-8.2 / E2 (décision #14 du plan E2) : ni le nom de fichier d'origine ni
+  // le texte extrait d'un courrier ne doivent transiter dans les logs. Champs
+  // loggables côté documents : documentId, caseFileId, kind, sizeBytes,
+  // pageCount, readable, extractedTextLength — rien d'autre.
+  "*.originalName",
+  "*.extractedText",
+  "*.filename",
+  "originalName",
+  "extractedText",
+  "filename",
 ];
 
 export const logger = pino({

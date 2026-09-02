@@ -88,15 +88,24 @@ Docker démarrée :
 - **`contract/`** : schémas Zod d'auth + de documents (messages FR, chemins
   d'endpoints, enveloppe d'erreur). Buildé (`dist/`).
 - **`back/`** : Fastify + authentification complète (E1), `GET /api/sante`,
-  **import de documents** (E2/PR-A : `POST /api/documents` validé par signature
-  (magic bytes) + taille, stockage local hors racine web sous `STORAGE_DIR` avec
-  nom UUID, aperçu authentifié `GET /api/documents/:id/file`, retrait
+  **import et lecture de documents** (E2/PR-A+B : `POST /api/documents` validé
+  par signature (magic bytes) + taille, stockage local hors racine web sous
+  `STORAGE_DIR` avec nom UUID, **extraction PDF synchrone** via `unpdf`
+  (`server/pdf/extract.ts`, ADR-013/016) avec barrière « illisible »
+  < 100 caractères utiles et rejet 422 des PDF > 10 pages (ADR-014), aperçu
+  authentifié `GET /api/documents/:id/file`, remplacement
+  `POST /api/documents/:id/replace`, consentement fictif
+  `POST /api/documents/:id/confirm-fictional` (US-2.3), retrait
   `DELETE /api/documents/:id`), couche d'accès scopée `userId`, rate-limit
   global + presets par route (`server/http/rate-limit.ts`, seuils par env —
-  US-8.1 ; `/api/documents` porte `RATE_LIMITS.import`), config validée au boot.
-  Tests unitaires verts ; suites d'intégration (nécessitent la base Docker).
-  Nouvelle variable d'env : `STORAGE_DIR` (voir `.env.example` ; le plafond
-  d'upload vient du contrat partagé) ; `back/storage/` est git-ignoré.
+  US-8.1 ; `/api/documents` porte `RATE_LIMITS.import`), config validée au boot,
+  logs avec `redact` pino sur le contenu des documents (US-8.2).
+  Tests unitaires verts ; suites d'intégration (nécessitent la base Docker) dont
+  `documents.corpus.test.ts`, qui rejoue les 15 courriers fictifs de
+  `05-courriers-fictifs/` (sautée si le corpus est absent).
+  Variables d'env : `STORAGE_DIR`, `PDF_MAX_PAGES`, `PDF_EXTRACT_TIMEOUT_MS`
+  (voir `.env.example` ; le plafond d'upload vient du contrat partagé) ;
+  `back/storage/` est git-ignoré.
 - **`front/`** : Next.js 16 + Tailwind v4 (thème du design system, clair uniquement),
   écran 01 (connexion / inscription), pages mot-de-passe-oublié / réinitialiser,
   middleware + garde serveur de l'espace connecté, pages 404/500. `next build` OK.

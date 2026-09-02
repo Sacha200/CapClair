@@ -50,6 +50,13 @@ export const EnvSchema = z.object({
   // message d'erreur (« dépasse 10 Mo ») y est figé — une valeur configurable
   // ferait mentir le message et divergerait du front.
 
+  // --- Extraction PDF (E2, US-2.4) ---
+  // Au-delà de PDF_MAX_PAGES : rejet 422 (ADR-014). Le message du contrat dit
+  // « plus de 10 pages » : ne changer ce seuil qu'avec le contrat.
+  PDF_MAX_PAGES: z.coerce.number().int().positive().default(10),
+  // Dépassement du budget d'extraction → parcours « illisible », jamais de 500.
+  PDF_EXTRACT_TIMEOUT_MS: z.coerce.number().int().positive().default(5000),
+
   // Plafond global appliqué à TOUTES les routes (garde-fou anti-abus, US-8.1) ;
   // les presets par route ci-dessous le resserrent sur les points sensibles.
   RATE_LIMIT_GLOBAL_MAX: z.coerce.number().int().positive().default(1000),
