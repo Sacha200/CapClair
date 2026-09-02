@@ -1,6 +1,7 @@
 # Plan d'implémentation — Epic E2 « Import et lecture du document »
 
-Statut : **PR-A implémentée** (branche `feat/e2-upload-documents`) · PR-B / PR-C à venir · Sprint 4 · Prérequis : E1 (auth) fusionné sur `main`.
+Statut : **PR-A fusionnée** (#63) · **PR-B implémentée** (branche `feat/e2-extract-pdf`) · PR-C à venir · Sprint 4 · Prérequis : E1 (auth) fusionné sur `main`.
+Écarts PR-B : décision #12 tranchée en revue PR-A — CSP `default-src 'none'` **sans** `sandbox` (le sandbox désactive le viewer PDF de Chrome) ; test US-8.2 réalisé en unitaire sur la config `redact` du logger (`logger.redact.test.ts`), le logger applicatif étant silencieux en test ; `montants[].valeur` du dataset parfois interprétée (« €/jour ») → le test corpus n'asserte que la partie numérique.
 Décisions tranchées le 2026-09-01 : #1 `INDETERMINE`, #2 `CaseFile` créé à l'import, #3 rejet PDF > 10 pages, #4 `unpdf`. Reste à trancher : #5–#14 (recommandations par défaut applicables).
 
 **Écart de mise en œuvre (PR-A)** : `@fastify/multipart` v10 a `throwFileSizeLimit: true` par défaut (lève `FST_REQ_FILE_TOO_LARGE` dans `toBuffer()`). On l'enregistre avec `throwFileSizeLimit: false` pour que `assertValidUpload` reste le seul point qui décide du 413 et de son message exact (cf. risque 12.2). `@fastify/multipart` retenu en `^10.1.1` (aligné sur les autres plugins @fastify du dépôt), pas `~9.x`.

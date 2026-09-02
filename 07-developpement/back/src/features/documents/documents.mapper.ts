@@ -1,7 +1,7 @@
 import type { UploadDocumentResult } from "./documents.service.js";
 import type { DocumentMetadata, UploadDocumentResponse } from "./documents.dto.js";
 
-/** Projette le résultat d'upload vers le DTO exposé (aucun `storagePath`). */
+/** Projette le résultat d'upload vers le DTO exposé (aucun `storagePath`, jamais le texte extrait). */
 export function toUploadResponseDto(result: UploadDocumentResult): UploadDocumentResponse {
   return {
     documentId: result.documentId,
@@ -10,6 +10,9 @@ export function toUploadResponseDto(result: UploadDocumentResult): UploadDocumen
     mimeType: result.mimeType,
     kind: result.kind,
     sizeBytes: result.sizeBytes,
+    ...(result.pageCount !== undefined ? { pageCount: result.pageCount } : {}),
+    extractedTextLength: result.extractedTextLength,
+    readable: result.readable,
   };
 }
 

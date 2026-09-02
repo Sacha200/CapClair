@@ -9,7 +9,7 @@
  * Seul ce module (et `context.ts`) appelle Prisma directement ; `features/*` et
  * `server/auth/*` doivent passer par `context.forUser(...)` (règle ESLint).
  */
-import type { Organisme, PrismaClient } from "../../generated/prisma/client.js";
+import type { ConsentType, Organisme, PrismaClient } from "../../generated/prisma/client.js";
 import { NotFoundError } from "../../lib/errors.js";
 
 /** Dossiers — filtrés directement sur `userId`, hors dossiers supprimés. */
@@ -87,6 +87,8 @@ export class DocumentRepository extends LinkedRepository {
     mimeType: string;
     sizeBytes: number;
     storagePath: string;
+    extractedText?: string | null;
+    extractedTextHash?: string | null;
   }) {
     const userId = this.userId;
     return this.prisma.$transaction(async (tx) => {
@@ -100,10 +102,44 @@ export class DocumentRepository extends LinkedRepository {
           mimeType: data.mimeType,
           sizeBytes: data.sizeBytes,
           storagePath: data.storagePath,
+          extractedText: data.extractedText ?? null,
+          extractedTextHash: data.extractedTextHash ?? null,
         },
       });
       return { caseFile, document };
     });
+  }
+
+  /**
+   * Remplace le fichier d'un document existant (US-2.2 AC2, US-2.6 AC4) : même
+   * `Document`, même `CaseFile` — la transition « illisible → lisible » ne
+   * recrée pas le dossier. Renvoie l'ancien `storagePath` pour la purge disque
+   * (best-effort, côté service). 404 si absent/autre compte.
+   */
+  async replaceFileForUser(
+    id: string,
+    data: {
+      originalName: string;
+      mimeType: string;
+      sizeBytes: number;
+      storagePath: string;
+      extractedText?: string | null;
+      extractedTextHash?: string | null;
+    },
+  ): Promise<{ oldStoragePath: string; caseFileId: string }> {
+    const existing = await this.findByIdForUser(id); // NotFoundError si absent/autre compte
+    await this.prisma.document.update({
+      where: { id: existing.id },
+      data: {
+        originalName: data.originalName,
+        mimeType: data.mimeType,
+        sizeBytes: data.sizeBytes,
+        storagePath: data.storagePath,
+        extractedText: data.extractedText ?? null,
+        extractedTextHash: data.extractedTextHash ?? null,
+      },
+    });
+    return { oldStoragePath: existing.storagePath, caseFileId: existing.caseFileId };
   }
 
   /** Scopé ; renvoie le `storagePath` pour la purge disque (best-effort, côté service). */
@@ -111,6 +147,50 @@ export class DocumentRepository extends LinkedRepository {
     const existing = await this.findByIdForUser(id); // NotFoundError si absent/autre compte
     await this.prisma.document.delete({ where: { id: existing.id } });
     return { storagePath: existing.storagePath, caseFileId: existing.caseFileId };
+  }
+}
+
+/**
+ * Consentements rattachés à un dossier (US-2.3 : `FICTIONAL_DOCUMENT`).
+ *
+ * `record` écrit toujours pour l'utilisateur du scope — jamais de `userId`
+ * fourni par l'appelant. La ligne est immuable (preuve de consentement,
+ * cf. schéma) : pas de update/delete ici.
+ */
+export class ConsentLogRepository extends LinkedRepository {
+  async record(data: {
+    caseFileId: string;
+    consentType: ConsentType;
+    granted: boolean;
+    policyVersion: string;
+  }) {
+    // Le dossier doit appartenir au scope : même 404 qu'une lecture (US-1.5).
+    const caseFile = await this.prisma.caseFile.findFirst({
+      where: { id: data.caseFileId, ...this.caseFileScope },
+      select: { id: true },
+    });
+    if (!caseFile) throw new NotFoundError("caseFile");
+    return this.prisma.consentLog.create({
+      data: {
+        userId: this.userId,
+        caseFileId: data.caseFileId,
+        consentType: data.consentType,
+        granted: data.granted,
+        policyVersion: data.policyVersion,
+      },
+    });
+  }
+
+  findLatest(query: { caseFileId: string; consentType: ConsentType }) {
+    return this.prisma.consentLog.findFirst({
+      where: {
+        caseFileId: query.caseFileId,
+        consentType: query.consentType,
+        userId: this.userId,
+        caseFile: this.caseFileScope,
+      },
+      orderBy: { createdAt: "desc" },
+    });
   }
 }
 

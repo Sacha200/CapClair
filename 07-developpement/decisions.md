@@ -315,6 +315,51 @@ fin de suite (`test/setup.ts`).
 
 ---
 
+## ADR-013 — Extraction PDF synchrone dans la requête ; barrière « illisible »
+
+**Date** : E2, PR-B (US-2.4, US-2.6).
+**Statut** : acté.
+
+**Contexte.** Le pipeline (doc archi §6) prévoit les étapes 2→5 (import,
+validation, extraction, barrière) **synchrones** dans la requête web ;
+l'enfilement BullMQ de la tâche « analyse » (étape 6) est la frontière E2/E3.
+
+**Décision.**
+- `extractPdfText` s'exécute dans le handler d'upload (et de `replace`),
+  **en mémoire**, avant toute écriture disque ou base. Budget
+  `PDF_EXTRACT_TIMEOUT_MS` (5 s) via `Promise.race` ; tout échec (corrompu,
+  chiffré, timeout) vaut `{ text: "", pageCount: 0 }` — jamais de 500.
+- **Barrière dure** (US-2.6 AC1/AC3) : sous `UNREADABLE_TEXT_THRESHOLD`
+  (100 caractères utiles, contrat partagé), l'import réussit (`readable: false`)
+  mais rien n'est amorcé : pas de dossier d'analyse, pas d'appel externe.
+  Garantie structurelle : aucun import `bullmq` dans `features/documents/**`.
+- Le texte extrait est stocké (`Document.extractedText`) avec son SHA-256
+  (`extractedTextHash`), futur cache d'analyse IA (E3, doc archi §7).
+
+**Conséquences.** E3 lit `extractedText` en base et n'extrait jamais lui-même ;
+la reprise après illisible passe par `replace` (ADR-011), qui ré-extrait.
+
+---
+
+## ADR-014 — PDF de plus de 10 pages : rejet 422 avec message explicite
+
+**Date** : E2, PR-B (US-2.4 AC3).
+**Statut** : acté (à confirmer PO — la limite haute était l'alternative).
+
+**Contexte.** US-2.4 AC3 laisse le choix : traiter jusqu'à un plafond, ou
+rejeter avec un message explicite, le comportement retenu devant être documenté.
+
+**Décision.** **Rejet `422`** (`code: "too_many_pages"`, message du contrat
+« Ce PDF compte plus de 10 pages. ... ») dès que `pageCount > PDF_MAX_PAGES`
+(défaut 10). Justification : SLA d'extraction < 5 s et budget de jetons IA en E3
+— un courrier administratif de plus de 10 pages sort du cas d'usage MVP. Le
+rejet intervient **avant toute écriture** : ni fichier, ni dossier, ni document.
+
+**Conséquences.** Le seuil est une variable d'env (`PDF_MAX_PAGES`) mais le
+message du contrat dit « 10 pages » : ne changer l'un qu'avec l'autre.
+
+---
+
 ## ADR-015 — `ConsentType` : `FICTIONAL_DOCUMENT` ajouté en E2 ; renommage reporté
 
 **Date** : E2, PR-A (US-2.3).
@@ -334,3 +379,26 @@ transaction ici : aucune ligne n'utilise la nouvelle valeur dans la migration
 **Conséquences.** L'endpoint `POST /api/documents/:id/confirm-fictional` qui
 écrit la ligne `ConsentLog { consentType: FICTIONAL_DOCUMENT }` est livré en
 PR-B.
+
+---
+
+## ADR-016 — Librairie d'extraction PDF : `unpdf`
+
+**Date** : E2, PR-B (US-2.4).
+**Statut** : acté.
+
+**Contexte.** `pdf-parse@1.1.1` (le candidat évident) n'est plus maintenu et lit
+un fichier local à l'import quand `!module.parent` — précisément le contexte
+ESM/`tsx`/Vitest de ce dépôt (plan E2 §12.3).
+
+**Décision.** **`unpdf`** : ESM natif, maintenu, wrapper « serverless » de
+PDF.js, sans effet de bord fichier. Chemin « texte seul »
+(`getDocumentProxy` + `extractText`), aucun rendu — pas de polyfill DOM requis.
+La librairie est **encapsulée dans `server/pdf/extract.ts`**, seul point de
+dépendance : un repli (`pdf-parse/lib/pdf-parse.js` ou `pdfjs-dist` direct) ne
+toucherait que ce module.
+
+**Conséquences.** Vérifié sur le corpus des 15 courriers fictifs
+(`documents.corpus.test.ts`) : texte intégral extrait, largement sous le budget
+de 5 s par courrier. L'avertissement `standardFontDataUrl` de PDF.js est
+inoffensif sur ce chemin (métriques de polices standard, texte déjà extrait).

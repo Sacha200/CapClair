@@ -28,9 +28,10 @@ export const UNREADABLE_TEXT_THRESHOLD = 100;
 export const DocumentKindSchema = z.enum(["pdf", "image"]);
 
 /**
- * Réponse de `POST /api/documents` (et `/replace`). `pageCount`,
- * `extractedTextLength` et `readable` restent optionnels tant que l'extraction
- * (PR-B, US-2.4/2.6) n'est pas branchée.
+ * Réponse de `POST /api/documents` (et `/replace`). `pageCount` n'existe que
+ * pour un PDF (pas d'extraction d'image au MVP — US-2.5 coupée, décision C1) ;
+ * un PDF illisible (corrompu, scanné sans texte, timeout) a `pageCount: 0`.
+ * `readable === false` déclenche le parcours « document illisible » (US-2.6).
  */
 export const UploadDocumentResponseSchema = z.object({
   documentId: z.string(),
@@ -39,9 +40,9 @@ export const UploadDocumentResponseSchema = z.object({
   mimeType: z.enum(ACCEPTED_MIME),
   kind: DocumentKindSchema,
   sizeBytes: z.number().int().nonnegative(),
-  pageCount: z.number().int().positive().optional(),
-  extractedTextLength: z.number().int().nonnegative().optional(),
-  readable: z.boolean().optional(),
+  pageCount: z.number().int().nonnegative().optional(),
+  extractedTextLength: z.number().int().nonnegative(),
+  readable: z.boolean(),
 });
 
 export const DocumentMetadataSchema = z.object({
@@ -53,7 +54,7 @@ export const DocumentMetadataSchema = z.object({
   createdAt: z.string(),
 });
 
-/** US-2.3 AC1/AC2 (posé par PR-B). */
+/** US-2.3 AC1/AC2 : `confirmed` doit être littéralement `true` — `false` est rejeté. */
 export const ConfirmFictionalInputSchema = z.object({ confirmed: z.literal(true) });
 
 export type DocumentKind = z.infer<typeof DocumentKindSchema>;

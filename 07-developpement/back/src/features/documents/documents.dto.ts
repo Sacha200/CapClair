@@ -2,8 +2,13 @@
 export {
   UploadDocumentResponseSchema,
   DocumentMetadataSchema,
+  ConfirmFictionalInputSchema,
   DOCUMENT_MESSAGES,
   DOCUMENT_PATHS,
 } from "@capclair/contract";
 
-export type { UploadDocumentResponse, DocumentMetadata } from "@capclair/contract";
+export type {
+  UploadDocumentResponse,
+  DocumentMetadata,
+  ConfirmFictionalInput,
+} from "@capclair/contract";
