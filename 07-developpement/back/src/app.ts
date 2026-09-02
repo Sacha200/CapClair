@@ -6,6 +6,7 @@
  *  - `/auth/*`             : public (register/login/logout/session/password).
  *  - `/api/*` (autre)      : gardé — 401 sans session valide (US-1.4 AC3).
  *    dont `/api/documents/*` (US-2.1/US-2.2, import et aperçu de documents).
+ *  - `/docs`               : documentation OpenAPI (développement uniquement).
  *
  * Le gestionnaire d'erreurs unique traduit les erreurs applicatives en
  * `{ error, code?, fields? }` sans jamais fuiter d'interne (US-8.2).
@@ -15,8 +16,11 @@ import cookie from "@fastify/cookie";
 import helmet from "@fastify/helmet";
 import multipart from "@fastify/multipart";
 import rateLimit from "@fastify/rate-limit";
+import swagger from "@fastify/swagger";
+import swaggerUi from "@fastify/swagger-ui";
 import {
   hasZodFastifySchemaValidationErrors,
+  jsonSchemaTransform,
   serializerCompiler,
   validatorCompiler,
 } from "fastify-type-provider-zod";
@@ -65,6 +69,28 @@ export async function buildApp() {
       error: `Trop de tentatives. Réessayez dans ${context.after}.`,
     }),
   });
+
+  // Documentation OpenAPI (développement uniquement) : le spec est généré à
+  // partir des schémas Zod déclarés sur les routes (`jsonSchemaTransform`).
+  // UI interactive sur /docs, spec brut sur /docs/json. Non exposé en prod ni
+  // en test : la doc est un outil de dev, pas une surface publique.
+  if (env.NODE_ENV === "development") {
+    await app.register(swagger, {
+      openapi: {
+        info: {
+          title: "API CapClair",
+          description:
+            "Authentification par cookie de session : appeler `POST /auth/login` " +
+            "d'abord (le cookie est posé automatiquement par le navigateur). " +
+            "Les routes `/api/*` renvoient 401 sans session valide. " +
+            "`POST /api/documents` attend un corps `multipart/form-data` (champ `file`).",
+          version: "0.1.0",
+        },
+      },
+      transform: jsonSchemaTransform,
+    });
+    await app.register(swaggerUi, { routePrefix: "/docs" });
+  }
 
   // Gestionnaires d'erreur AVANT l'enregistrement des routes : les contextes
   // enfants (plugins de routes) héritent du gestionnaire présent à leur création.
