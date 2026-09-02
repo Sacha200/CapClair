@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { RiFullscreenLine } from "@remixicon/react";
 import { cn } from "@/lib/cn";
 import { ApiError } from "@/lib/api/errors";
 import {
@@ -26,18 +25,25 @@ import { DocumentPreview } from "@/components/documents/document-preview";
 /**
  * Écran 03 — Import d'un courrier (US-2.1, 2.2, 2.3, 2.6).
  *
- * Structure alignée sur la maquette Figma (node 1:12, « CapClair — Wireframes
- * MVP ») : aperçu à gauche (colonne extensible) + zone de dépôt/statut à
- * droite (colonne fixe), case de consentement pleine largeur, actions
- * alignées à droite. Écart documenté : le bloc « aperçu » de la maquette est
- * un mock statique (bandeau + lignes) — ici c'est le vrai document rendu via
- * la route authentifiée (DocumentPreview), donc plus fidèle à l'usage réel
- * qu'une reproduction du mock.
+ * Structure et styles fidèles à la maquette Hi-Fi (node `32:173`, page
+ * ✨ Hi-Fi du fichier Figma) : PAS de carte englobante — chaque bloc porte
+ * son propre fond (aperçu et statut fichier en blanc, panneau de
+ * confirmation teinté), posés directement sur le fond de page. Écarts
+ * documentés :
+ *  - le bloc « aperçu » de la maquette est un mock statique (bandeau rouge +
+ *    lignes grises) ; ici c'est le vrai document rendu via la route
+ *    authentifiée (DocumentPreview) — plus fidèle à l'usage réel. Le bandeau
+ *    « DOCUMENT FICTIF — DÉMONSTRATION » apparaît naturellement : il fait
+ *    partie du contenu réel des courriers fictifs du corpus.
+ *  - le panneau de confirmation change de ton (orange tant que non coché →
+ *    neutre une fois coché) : comportement déduit, la maquette ne montre que
+ *    l'état non coché.
+ *  - « Retirer le document » (lien discret) n'apparaît pas dans le mock
+ *    statique mais reste nécessaire (US-2.2 AC2).
  *
  * Machine d'état : `idle` (dropzone) → `busy` (upload/remplacement) →
- * `ready` (document en place, lisible ou non) ; les erreurs re-basculent vers
- * l'état précédent avec un message. Le serveur reste l'autorité : tout message
- * d'erreur API est réaffiché tel quel (messages FR du contrat).
+ * `ready` (document en place, lisible ou non). Le serveur reste l'autorité :
+ * tout message d'erreur API est réaffiché tel quel (messages FR du contrat).
  */
 export function ImportForm() {
   const router = useRouter();
@@ -119,37 +125,39 @@ export function ImportForm() {
 
   const readable = doc?.readable === true;
   const canStart = readable && fictionalConfirmed && busy === null;
+  const checkboxEnabled = readable && busy === null;
 
   return (
-    <div className="mt-6 rounded-[var(--radius-card)] border border-border bg-bg-surface p-4 sm:p-[18px]">
+    <div className="mt-5 flex flex-col items-start gap-5">
       {error ? <Alert tone="error">{error}</Alert> : null}
 
-      <div className={cn("flex flex-col gap-4 lg:flex-row", error && "mt-4")}>
-        {/* Colonne aperçu (US-2.2 AC1) — extensible, à gauche */}
-        <div className="flex flex-1 flex-col gap-1.5">
-          <p className="text-xs font-semibold text-text-strong">Aperçu du document</p>
-          {doc ? (
-            <>
-              <DocumentPreview key={`${doc.documentId}-${revision}`} id={doc.documentId} kind={doc.kind} />
-              <a
-                href={documentFileSrc(doc.documentId)}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-1 self-start text-xs font-medium text-text-muted hover:text-text"
-              >
-                <RiFullscreenLine size={14} aria-hidden />
-                Voir en plein écran
-              </a>
-            </>
-          ) : (
-            <div className="flex min-h-[320px] flex-1 items-center justify-center rounded-[var(--radius-card-inner)] border border-border bg-bg-subtle p-6 text-center text-sm text-text-muted">
-              L&apos;aperçu de votre courrier s&apos;affichera ici.
-            </div>
-          )}
+      <div className="flex w-full items-start gap-5 max-lg:flex-col">
+        {/* Colonne aperçu (US-2.2 AC1) — extensible */}
+        <div className="flex min-w-0 flex-1 flex-col gap-2 self-stretch">
+          <p className="text-sm font-semibold text-text-strong">Aperçu du document</p>
+          <div className="flex flex-1 flex-col gap-2.5 rounded-[var(--radius-card)] border border-border bg-bg-surface px-8 py-6">
+            {doc ? (
+              <>
+                <DocumentPreview key={`${doc.documentId}-${revision}`} id={doc.documentId} kind={doc.kind} />
+                <a
+                  href={documentFileSrc(doc.documentId)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="self-start text-[13px] font-semibold text-primary hover:underline"
+                >
+                  ⤢ Voir en plein écran
+                </a>
+              </>
+            ) : (
+              <div className="flex min-h-[280px] flex-1 items-center justify-center text-center text-sm text-text-muted">
+                L&apos;aperçu de votre courrier s&apos;affichera ici.
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* Colonne dépôt/statut — largeur fixe, à droite */}
-        <div className="flex flex-col gap-3 lg:w-[360px] lg:shrink-0">
+        {/* Colonne dépôt/statut — largeur fixe */}
+        <div className="flex w-full flex-col gap-3 self-stretch lg:w-[360px] lg:shrink-0">
           <Dropzone
             onFile={handleFile}
             disabled={busy !== null}
@@ -162,21 +170,17 @@ export function ImportForm() {
                     ? "Choisir un autre fichier"
                     : undefined
             }
+            hint={doc ? undefined : "ou cliquez pour parcourir"}
           />
 
           {doc ? (
-            <div className="flex items-center justify-between gap-2 rounded-[var(--radius-field)] border border-border bg-bg-surface px-3 py-2.5">
-              <div className="min-w-0">
-                <p className="truncate text-sm text-text-strong">{doc.originalName}</p>
-                <p className="text-xs text-text-muted">
-                  {doc.kind === "pdf" ? "PDF" : "Image"}
-                  {doc.pageCount ? ` — ${doc.pageCount} page${doc.pageCount > 1 ? "s" : ""}` : ""}
-                  {` — ${Math.max(1, Math.round(doc.sizeBytes / 1024))} Ko`}
-                </p>
-              </div>
+            <div className="flex items-center justify-between gap-2 rounded-[var(--radius-card-inner)] border border-border bg-bg-surface px-3.5 py-3">
+              <p className="min-w-0 truncate text-sm text-text">
+                {doc.originalName} · {Math.max(1, Math.round(doc.sizeBytes / 1024))} Ko
+              </p>
               <span
                 className={cn(
-                  "shrink-0 rounded-[var(--radius-pill)] px-2 py-0.5 text-xs font-medium",
+                  "shrink-0 rounded-[var(--radius-pill)] px-2.5 py-1 text-xs font-semibold",
                   readable ? "bg-success-light text-success" : "bg-error-light text-error",
                 )}
               >
@@ -209,16 +213,27 @@ export function ImportForm() {
         </div>
       </div>
 
-      <div className="mt-4">
+      {/* Panneau de confirmation (US-2.3 AC1) : ton alerte tant que non coché. */}
+      <div
+        className={cn(
+          "w-full rounded-[var(--radius-card-inner)] border px-3.5 py-3",
+          checkboxEnabled && !fictionalConfirmed
+            ? "border-warning bg-warning-light"
+            : "border-border bg-bg-surface",
+        )}
+      >
         <CheckboxField
           label="Je confirme qu'il s'agit d'un document fictif et je comprends que CapClair ne doit pas être utilisé avec de vrais courriers administratifs."
           checked={fictionalConfirmed}
-          disabled={!readable || busy !== null}
+          disabled={!checkboxEnabled}
           onChange={(event) => void handleFictionalChange(event.target.checked)}
         />
       </div>
+      <p className="-mt-3 text-xs text-text-muted">
+        L&apos;analyse ne démarrera qu&apos;après avoir coché cette case.
+      </p>
 
-      <div className="mt-4 flex flex-wrap justify-end gap-2.5">
+      <div className="flex w-full items-center justify-end gap-3">
         <Button variant="secondary" fullWidth={false} onClick={handleCancel} disabled={busy !== null}>
           Annuler
         </Button>

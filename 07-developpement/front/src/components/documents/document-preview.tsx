@@ -13,9 +13,12 @@ export function DocumentPreview({ id, kind }: { id: string; kind: DocumentKind }
   const [failed, setFailed] = useState(false);
   const src = documentFileSrc(id);
 
+  // Pas de bordure/fond propres : le composant est nested dans la carte
+  // blanche de la colonne aperçu (maquette Hi-Fi) — il en occupe l'espace
+  // disponible sans doubler le cadre.
   if (failed) {
     return (
-      <div className="flex h-full min-h-[320px] flex-col items-center justify-center gap-2 rounded-[var(--radius-card)] border border-border bg-bg-subtle p-6 text-center text-sm text-text-muted">
+      <div className="flex min-h-[320px] flex-1 flex-col items-center justify-center gap-2 rounded-[8px] bg-bg-subtle p-6 text-center text-sm text-text-muted">
         <p>Aperçu indisponible dans ce navigateur.</p>
         <a
           href={src}
@@ -35,7 +38,7 @@ export function DocumentPreview({ id, kind }: { id: string; kind: DocumentKind }
         src={src}
         title="Aperçu du document"
         onError={() => setFailed(true)}
-        className="h-full min-h-[420px] w-full rounded-[var(--radius-card-inner)] border border-border-strong bg-bg-subtle"
+        className="min-h-[420px] w-full flex-1 rounded-[8px] bg-bg-subtle"
       />
     );
   }
@@ -46,7 +49,7 @@ export function DocumentPreview({ id, kind }: { id: string; kind: DocumentKind }
       src={src}
       alt="Aperçu du document importé"
       onError={() => setFailed(true)}
-      className="max-h-[520px] w-full rounded-[var(--radius-card-inner)] border border-border-strong object-contain"
+      className="max-h-[480px] w-full rounded-[8px] object-contain"
     />
   );
 }

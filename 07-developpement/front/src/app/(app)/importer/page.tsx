@@ -8,9 +8,8 @@ export default function ImporterPage() {
   return (
     <section>
       <h1 className="text-2xl font-bold text-text-strong">Importer un courrier</h1>
-      <p className="mt-2 text-sm text-text-muted">
-        Déposez un courrier fictif (PDF, PNG ou JPEG) : CapClair le lit puis vous aidera à le
-        comprendre.
+      <p className="mt-1 text-sm text-text-muted">
+        Déposez un courrier fictif au format PDF, puis vérifiez l&apos;aperçu avant l&apos;analyse.
       </p>
       <ImportForm />
     </section>

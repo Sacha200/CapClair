@@ -21,8 +21,10 @@ export function Button({
         fullWidth && "w-full",
         variant === "primary" &&
           "bg-primary text-text-on-primary hover:bg-primary-hover active:bg-primary-active",
+        // Tokens du design-system.md (« Bouton — Secondaire ») : contour et
+        // texte en primaire, pas un gris neutre (maquette Hi-Fi, écran 03).
         variant === "secondary" &&
-          "border border-border-strong bg-bg-surface text-text hover:bg-bg-subtle",
+          "border border-primary bg-bg-surface text-primary hover:bg-primary-light",
         className,
       )}
       {...props}

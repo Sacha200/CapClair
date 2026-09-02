@@ -12,21 +12,19 @@ import Link from "next/link";
 export function Footer() {
   return (
     <footer className="border-t border-border bg-bg-subtle">
-      <div className="mx-auto flex max-w-5xl flex-col gap-2 px-4 py-4 text-xs text-text-muted sm:px-10">
+      <div className="mx-auto flex max-w-5xl flex-col gap-2 px-4 py-5 text-xs text-text-muted sm:px-10">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <p>CapClair n&apos;est pas un conseiller juridique. Documents fictifs uniquement.</p>
-          <nav className="flex gap-4 font-medium">
-            <Link href="/cgu" className="hover:text-text">
+          <nav className="flex gap-4 font-semibold text-primary">
+            <Link href="/cgu" className="hover:underline">
               CGU
             </Link>
-            <Link href="/confidentialite" className="hover:text-text">
+            <Link href="/confidentialite" className="hover:underline">
               Confidentialité
             </Link>
           </nav>
         </div>
-        <p className="text-text-muted/80">
-          © 2026 CapClair — projet de démonstration, aucune donnée réelle.
-        </p>
+        <p>© 2026 CapClair — projet de démonstration, aucune donnée réelle.</p>
       </div>
     </footer>
   );
