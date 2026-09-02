@@ -40,11 +40,20 @@ export function analysisQueue(): Queue<AnalysisJobData> {
 
 /**
  * Enfile l'analyse d'un dossier. `jobId = caseFileId` : deux déclenchements
- * concurrents pour le même dossier ne créent qu'un job tant que le précédent
- * n'est pas terminé (garde-fou anti-doublon, complète le 409 de la route).
+ * concurrents pour le même dossier ne créent qu'un job (garde-fou anti-doublon,
+ * complète le 409 de la route).
+ *
+ * BullMQ **ignore** un `add` dont le `jobId` existe déjà — y compris un job
+ * terminé ou en échec encore conservé (`removeOnComplete`/`removeOnFail` avec
+ * rétention). Une relance après `ECHEC` (plan E3 §7) resterait donc sans effet.
+ * On retire donc l'éventuel job précédent avant de ré-enfiler ; `remove` échoue
+ * si le job est actif, mais dans ce cas la garde 409 de la route nous a déjà
+ * empêchés d'arriver ici.
  */
 export async function enqueueAnalysis(caseFileId: string): Promise<void> {
-  await analysisQueue().add("analyze", { caseFileId }, { jobId: caseFileId });
+  const queue = analysisQueue();
+  await queue.remove(caseFileId).catch(() => undefined);
+  await queue.add("analyze", { caseFileId }, { jobId: caseFileId });
 }
 
 /** Ferme la file (arrêt propre du process API). */

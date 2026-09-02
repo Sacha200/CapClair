@@ -23,9 +23,13 @@ const IdParamsSchema = z.object({ id: z.string().uuid() });
 export const caseRoutes: FastifyPluginAsync = async (fastify) => {
   const app = fastify.withTypeProvider<ZodTypeProvider>();
 
+  // Statut d'analyse : consulté en **polling** (2 s, écran 04) — il ne porte
+  // donc PAS le preset serré `RATE_LIMITS.analysis` (10/min), qui protège les
+  // routes de *déclenchement* (US-8.1 #48) et couperait le polling au bout de
+  // ~20 s. Le plafond global (`RATE_LIMIT_GLOBAL_MAX`) reste le garde-fou.
   app.get(
     "/api/dossiers/:id",
-    { config: RATE_LIMITS.analysis, schema: { params: IdParamsSchema } },
+    { schema: { params: IdParamsSchema } },
     async (request) => {
       const db = forUser(requireUser(request).id);
       const caseFile = await casesService.getCaseStatus(db, request.params.id);

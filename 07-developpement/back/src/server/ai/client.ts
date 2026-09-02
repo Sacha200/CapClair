@@ -29,7 +29,17 @@ function getClient(): Anthropic {
 }
 
 // Calculé une fois : la conversion est pure et le schéma ne change jamais en cours de run.
-const RESPONSE_JSON_SCHEMA = zodToJsonSchema(AnalysisResultSchema, "AnalysisResult");
+//
+// `$refStrategy: "none"` : la sortie structurée d'Anthropic (`output_config`)
+// n'accepte qu'un schéma auto-contenu. Or `AvecExtrait` (le socle
+// `{ sourceExcerpt }`) est réutilisé par `.extend()` dans 4 sous-schémas, ce que
+// `zod-to-json-schema` factorise en `$ref` vers `#/definitions/...` — refusé par
+// l'API (« Reference to non-existent definition »). On inline donc tout ; le
+// schéma reste petit (poignée d'objets peu profonds), pas de risque d'explosion.
+const RESPONSE_JSON_SCHEMA = zodToJsonSchema(AnalysisResultSchema, {
+  $refStrategy: "none",
+  target: "jsonSchema7",
+});
 
 export interface AnalyzeLetterResult {
   /** `null` si la réponse n'a pas validé `AnalysisResultSchema` — l'appelant décide de la relance. */

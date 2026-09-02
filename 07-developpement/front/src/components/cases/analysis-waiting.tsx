@@ -47,21 +47,32 @@ export function AnalysisWaiting({ caseFileId }: { caseFileId: string }) {
   useEffect(() => {
     let cancelled = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
+    let consecutiveFailures = 0;
 
     async function tick() {
       try {
         const { analysisStatus } = await getCaseFile(caseFileId);
         if (cancelled) return;
+        consecutiveFailures = 0;
         const next = statusToView(analysisStatus);
         setView(next);
         // Tant que l'analyse n'a pas abouti, on re-planifie une lecture.
         if (next === "pending") timer = setTimeout(() => void tick(), POLL_INTERVAL_MS);
       } catch (err) {
         if (cancelled) return;
-        setView("error");
-        setErrorMessage(
-          messageFor(err, "Impossible de récupérer l'état de l'analyse. Réessayez dans un instant."),
-        );
+        // 404 = dossier inexistant / d'un autre compte → définitif. Le reste
+        // (429 transitoire, 5xx, coupure réseau) : on continue de sonder, on
+        // n'abandonne qu'après plusieurs échecs d'affilée.
+        const definitive = err instanceof ApiError && err.status === 404;
+        consecutiveFailures += 1;
+        if (definitive || consecutiveFailures >= 5) {
+          setView("error");
+          setErrorMessage(
+            messageFor(err, "Impossible de récupérer l'état de l'analyse. Réessayez dans un instant."),
+          );
+          return;
+        }
+        timer = setTimeout(() => void tick(), POLL_INTERVAL_MS);
       }
     }
 
