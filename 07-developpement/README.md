@@ -35,6 +35,7 @@ createdb ... capclair_test  # OU : psql "$DATABASE_URL" -c 'CREATE DATABASE capc
 
 # --- lancer ---
 npm run dev            # API sur http://localhost:3001  (GET /api/sante)
+                       # doc OpenAPI (dev uniquement) : http://localhost:3001/docs
 npm run worker         # worker BullMQ (aucune queue pour l'instant)
 cd ../front
 cp .env.local.example .env.local
