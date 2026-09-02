@@ -123,9 +123,13 @@ Docker démarrée :
   (`worker/analysis.ts` — `runAnalysisJob` : `EN_COURS` → IA (relance ×1 si
   schéma invalide) → `lib/dates` → transaction `applyAnalysis` idempotente
   préservant les lignes corrigées → `TERMINEE` ; toute erreur → `ECHEC` +
-  `AuditEvent` sans contenu de courrier). Reste : écran de consentement +
-  attente (PR-C) — voir `plans/E3-consentement-et-appel-a-l-ia.md`. Nouvelle
-  variable obligatoire : `ANTHROPIC_API_KEY` (aucun défaut, US-8.4).
+  `AuditEvent` sans contenu de courrier). **PR-C** (front) : `lib/api/cases.ts`,
+  étape de consentement IA sur l'écran 03 (case distincte nommant Anthropic —
+  US-3.1 AC1/AC2), écran 04 `/dossiers/[id]` « attente d'analyse » (polling 2 s
+  sur `GET /api/dossiers/:id`, « Relancer » sur `ECHEC`). Nouvelle variable
+  obligatoire : `ANTHROPIC_API_KEY` (aucun défaut, US-8.4).
 - **`front/`** : Next.js 16 + Tailwind v4 (thème du design system, clair uniquement),
   écran 01 (connexion / inscription), pages mot-de-passe-oublié / réinitialiser,
+  écran 02 (tableau de bord, coquille), écran 03 (`/importer` — dépôt, aperçu,
+  consentement fictif + IA), écran 04 (`/dossiers/[id]` — attente d'analyse),
   middleware + garde serveur de l'espace connecté, pages 404/500. `next build` OK.

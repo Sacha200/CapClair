@@ -1,7 +1,16 @@
 # Plan d'implémentation — Epic E3 « Consentement et appel à l'IA »
 
-Statut : **PR-A fusionnée** (#67) · **PR-B implémentée** (branche `feat/e3-ai-contract-client`) ·
-PR-C à venir · Prérequis : E1 (auth) + E2 (import/lecture) fusionnés sur `main`.
+Statut : **PR-A + PR-B + PR-C implémentées** (branche `feat/e3-ai-contract-client`, PR #67) ·
+Prérequis : E1 (auth) + E2 (import/lecture) fusionnés sur `main`.
+
+Écarts PR-C (vs §7) :
+- **Consentement IA = 2ᵉ case sur l'écran 03**, révélée une fois « document fictif » confirmée (se lit
+  comme une étape sans modale — la maquette n'en dessine pas). Case + endpoint + `ConsentType`
+  distincts (AC2) ; texte nommant **Anthropic** (AC1). La ligne `ConsentLog AI_PROCESSING` est écrite
+  au clic « Lancer l'analyse » (`confirmAiConsent` → `startAnalysis`), pas au cochage.
+- Écran 04 : maquette node `1:16` (basse fidélité, itération 2 — pas de page « Hi-Fi » dans le fichier
+  Figma courant). Route `/dossiers/[id]` sans suffixe `/analyse` (le wireframe le montrait) : E4
+  réutilisera la même URL pour le résultat quand `analysisStatus === TERMINEE`.
 
 Écarts PR-B (vs §6/§8/§10) :
 - **Accès BDD du worker** : `server/database/analysis-store.ts` (couche **système**, non scopée
