@@ -1,2 +1,2 @@
-/** Module ai — stub, à implémenter dans un sprint ultérieur. */
-export {};
+export { analyzeLetter, type AnalyzeLetterResult } from "./client.js";
+export { buildSystemPrompt, classifyOrganismeHeuristic, type HeuristicOrganisme } from "./prompts.js";

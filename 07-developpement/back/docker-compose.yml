@@ -13,6 +13,10 @@
 #
 # pgAdmin écoute sur http://localhost:5050 (PGADMIN_PORT) et lit ses
 # identifiants dans .env.
+#
+# Redis (E3) : file BullMQ de l'analyse IA + option store de rate-limit.
+# Port hôte 6379 (défaut de REDIS_URL) ; démarre avec un simple `up -d`,
+# l'image Alpine ne pesant que ~40 Mo.
 # ============================================================================
 
 # Nom de projet fixe : le conteneur et le volume ont été créés quand ce fichier
@@ -47,6 +51,24 @@ services:
       retries: 10
       start_period: 10s
 
+  redis:
+    image: redis:7-alpine
+    container_name: capclair-redis
+    restart: unless-stopped
+    # `--appendonly yes` : la file BullMQ survit à un redémarrage du conteneur
+    # (un job d'analyse enfilé n'est pas perdu). Volume dédié pour l'AOF.
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - capclair-redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+
   # Profil "app" : ne démarre pas avec un simple `up -d`, l'image pesant 783 Mo
   # pour un usage occasionnel. Lancer avec `docker compose --profile app up -d`.
   #
@@ -74,3 +96,5 @@ volumes:
     name: capclair-pgdata
   capclair-pgadmin:
     name: capclair-pgadmin
+  capclair-redisdata:
+    name: capclair-redisdata

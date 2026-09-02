@@ -85,6 +85,14 @@ export const EnvSchema = z.object({
 
   MAIL_TRANSPORT: z.enum(["console", "smtp"]).default("console"),
   MAIL_FROM: z.string().min(1).default("CapClair <no-reply@capclair.local>"),
+
+  // --- Analyse IA (E3, US-3.2) ---
+  // Pas de valeur par défaut : un secret n'a jamais de repli (US-8.4).
+  ANTHROPIC_API_KEY: z.string().min(1),
+  // Modèle choisi avec le PO (plan E3 §2 décision #1) : rapport qualité/coût
+  // adapté à une extraction structurée sur texte court. Repli sur Opus 5
+  // documenté (§9.5) si la précision sur le corpus s'avère insuffisante.
+  ANTHROPIC_MODEL: z.string().min(1).default("claude-sonnet-5"),
 });
 
 export type Env = z.infer<typeof EnvSchema>;
@@ -100,6 +108,7 @@ const VITEST_FALLBACK: Record<string, string> = {
   REDIS_URL: "redis://localhost:6379",
   APP_BASE_URL: "http://localhost:3000",
   COOKIE_SECURE: "false",
+  ANTHROPIC_API_KEY: "sk-ant-test-fallback",
 };
 
 function loadEnv(): Env {

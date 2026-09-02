@@ -30,6 +30,7 @@
     "db:reset": "docker compose down -v && docker compose up -d --wait"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.123.0",
     "@capclair/contract": "file:../contract",
     "@fastify/cookie": "^11.0.2",
     "@fastify/cors": "^10.1.0",
@@ -40,13 +41,15 @@
     "@prisma/client": "^7.9.1",
     "argon2": "^0.44.0",
     "bullmq": "^5.34.0",
+    "date-fns": "^4.4.0",
     "fastify": "^5.2.1",
     "fastify-plugin": "^5.0.1",
     "fastify-type-provider-zod": "^4.0.2",
     "ioredis": "^5.4.2",
     "pino": "^9.6.0",
     "unpdf": "^1.8.1",
-    "zod": "^3.24.1"
+    "zod": "^3.24.1",
+    "zod-to-json-schema": "^3.25.2"
   },
   "devDependencies": {
     "@eslint/js": "^9.18.0",

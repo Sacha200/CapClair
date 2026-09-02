@@ -11,6 +11,7 @@ import {
   replaceDocument,
   uploadDocument,
 } from "@/lib/api/documents";
+import { confirmAiConsent, startAnalysis } from "@/lib/api/cases";
 import {
   DOCUMENT_MESSAGES,
   validateFile,
@@ -23,7 +24,7 @@ import { Dropzone } from "@/components/documents/dropzone";
 import { DocumentPreview } from "@/components/documents/document-preview";
 
 /**
- * Écran 03 — Import d'un courrier (US-2.1, 2.2, 2.3, 2.6).
+ * Écran 03 — Import d'un courrier (US-2.1, 2.2, 2.3, 2.6, 3.1).
  *
  * Structure et styles fidèles à la maquette Hi-Fi (node `32:173`, page
  * ✨ Hi-Fi du fichier Figma) : PAS de carte englobante — chaque bloc porte
@@ -55,6 +56,10 @@ export function ImportForm() {
   const [busy, setBusy] = useState<null | "upload" | "replace" | "remove" | "start">(null);
   const [error, setError] = useState<string | null>(null);
   const [fictionalConfirmed, setFictionalConfirmed] = useState(false);
+  // Consentement IA (US-3.1) — distinct de la confirmation « document fictif »
+  // (AC2). Coché en mémoire ici ; la ligne ConsentLog AI_PROCESSING n'est
+  // écrite qu'au déclenchement (confirmAiConsent + startAnalysis).
+  const [aiConsentChecked, setAiConsentChecked] = useState(false);
 
   function messageFor(err: unknown): string {
     if (err instanceof ApiError && err.status > 0) return err.message;
@@ -74,6 +79,7 @@ export function ImportForm() {
       setDoc(next);
       setRevision((current) => current + 1);
       setFictionalConfirmed(false); // nouveau fichier → nouveau consentement (US-2.3)
+      setAiConsentChecked(false);
     } catch (err) {
       setError(messageFor(err));
     } finally {
@@ -90,6 +96,7 @@ export function ImportForm() {
       await deleteDocument(doc.documentId);
       setDoc(null);
       setFictionalConfirmed(false);
+      setAiConsentChecked(false);
     } catch (err) {
       setError(messageFor(err));
     } finally {
@@ -107,7 +114,12 @@ export function ImportForm() {
   /** US-2.3 AC1/AC2 : le cochage enregistre le consentement immédiatement. */
   async function handleFictionalChange(checked: boolean) {
     setFictionalConfirmed(checked);
-    if (!checked || !doc) return;
+    if (!checked) {
+      // L'étape de consentement IA est masquée : on repart de zéro (US-3.1 AC2).
+      setAiConsentChecked(false);
+      return;
+    }
+    if (!doc) return;
     try {
       await confirmFictional(doc.documentId);
     } catch (err) {
@@ -116,16 +128,37 @@ export function ImportForm() {
     }
   }
 
-  /** Placeholder E3 (décision #9 du plan) : le déclencheur d'analyse arrive en US-3.1. */
+  /**
+   * Déclenchement de l'analyse (US-3.1 AC3) : enregistre le consentement
+   * `AI_PROCESSING` (distinct de « document fictif », AC2) PUIS enfile
+   * l'analyse, avant de rediriger vers l'écran d'attente (écran 04, D8).
+   */
   async function handleStartAnalysis() {
-    if (!doc) return;
+    if (!doc || !aiConsentChecked) return;
+    setError(null);
     setBusy("start");
-    router.push(`/dossiers/${doc.caseFileId}`);
+    try {
+      await confirmAiConsent(doc.caseFileId);
+      await startAnalysis(doc.caseFileId);
+      router.push(`/dossiers/${doc.caseFileId}`);
+    } catch (err) {
+      // 409 : une analyse tourne déjà pour ce dossier — l'écran d'attente est
+      // exactement là où l'utilisateur doit aller, pas un message d'erreur.
+      if (err instanceof ApiError && err.status === 409) {
+        router.push(`/dossiers/${doc.caseFileId}`);
+        return;
+      }
+      setError(messageFor(err));
+      setBusy(null);
+    }
   }
 
   const readable = doc?.readable === true;
-  const canStart = readable && fictionalConfirmed && busy === null;
   const checkboxEnabled = readable && busy === null;
+  // Le consentement IA n'apparaît qu'une fois le caractère fictif confirmé —
+  // il se lit alors comme une étape (plan E3 §7), et reste une case distincte.
+  const showAiConsent = checkboxEnabled && fictionalConfirmed;
+  const canStart = readable && fictionalConfirmed && aiConsentChecked && busy === null;
 
   return (
     <div className="mt-5 flex flex-col items-start gap-5">
@@ -229,8 +262,34 @@ export function ImportForm() {
           onChange={(event) => void handleFictionalChange(event.target.checked)}
         />
       </div>
+      {/* Étape de consentement IA (US-3.1) — distincte de « document fictif »
+          (AC2), nomme explicitement le prestataire externe (AC1). */}
+      {showAiConsent ? (
+        <div
+          className={cn(
+            "w-full rounded-[var(--radius-card-inner)] border px-3.5 py-3",
+            aiConsentChecked ? "border-border bg-bg-surface" : "border-warning bg-warning-light",
+          )}
+        >
+          <p className="mb-2 text-sm text-text">
+            Pour analyser votre courrier, CapClair en envoie le texte à{" "}
+            <span className="font-semibold">Anthropic</span>, une entreprise d&apos;intelligence
+            artificielle située hors de l&apos;Union européenne. Le texte n&apos;est utilisé que
+            pour produire l&apos;analyse.
+          </p>
+          <CheckboxField
+            label="J'autorise l'envoi du texte de mon courrier à Anthropic pour réaliser l'analyse."
+            checked={aiConsentChecked}
+            disabled={busy !== null}
+            onChange={(event) => setAiConsentChecked(event.target.checked)}
+          />
+        </div>
+      ) : null}
+
       <p className="-mt-3 text-xs text-text-muted">
-        L&apos;analyse ne démarrera qu&apos;après avoir coché cette case.
+        {showAiConsent
+          ? "L'analyse ne démarrera qu'après avoir coché ces deux cases."
+          : "L'analyse ne démarrera qu'après avoir coché cette case."}
       </p>
 
       <div className="flex w-full items-center justify-end gap-3">
@@ -238,7 +297,7 @@ export function ImportForm() {
           Annuler
         </Button>
         <Button fullWidth={false} onClick={handleStartAnalysis} disabled={!canStart}>
-          Lancer l&apos;analyse
+          {busy === "start" ? "Démarrage…" : "Lancer l'analyse"}
         </Button>
       </div>
     </div>

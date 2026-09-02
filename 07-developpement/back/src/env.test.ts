@@ -8,7 +8,7 @@ describe("EnvSchema", () => {
     if (!result.success) {
       const missing = result.error.issues.map((i) => i.path.join("."));
       expect(missing).toEqual(
-        expect.arrayContaining(["DATABASE_URL", "REDIS_URL", "APP_BASE_URL"]),
+        expect.arrayContaining(["DATABASE_URL", "REDIS_URL", "APP_BASE_URL", "ANTHROPIC_API_KEY"]),
       );
     }
   });
@@ -18,6 +18,7 @@ describe("EnvSchema", () => {
       DATABASE_URL: "postgresql://u:p@localhost:5434/db",
       REDIS_URL: "redis://localhost:6379",
       APP_BASE_URL: "http://localhost:3000",
+      ANTHROPIC_API_KEY: "sk-ant-test",
     });
     expect(result.success).toBe(true);
     if (result.success) {
@@ -28,6 +29,7 @@ describe("EnvSchema", () => {
       expect(result.data.RATE_LIMIT_GLOBAL_MAX).toBe(1000);
       expect(result.data.RATE_LIMIT_IMPORT_MAX).toBe(20);
       expect(result.data.RATE_LIMIT_ANALYSIS_MAX).toBe(10);
+      expect(result.data.ANTHROPIC_MODEL).toBe("claude-sonnet-5");
     }
   });
 

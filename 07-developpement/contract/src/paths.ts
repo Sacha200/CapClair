@@ -18,3 +18,10 @@ export const DOCUMENT_PATHS = {
   replace: (id: string) => `/api/documents/${id}/replace`,
   confirmFictional: (id: string) => `/api/documents/${id}/confirm-fictional`,
 } as const;
+
+/** Chemins des endpoints de dossiers (préfixe `/api`, scope gardé — E3). */
+export const CASE_FILE_PATHS = {
+  detail: (id: string) => `/api/dossiers/${id}`,
+  consentAi: (id: string) => `/api/dossiers/${id}/consentement-ia`,
+  analyze: (id: string) => `/api/dossiers/${id}/analyser`,
+} as const;

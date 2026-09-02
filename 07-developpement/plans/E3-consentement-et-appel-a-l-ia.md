@@ -1,6 +1,29 @@
 # Plan d'implémentation — Epic E3 « Consentement et appel à l'IA »
 
-Statut : **à démarrer** (PR-A à venir) · Prérequis : E1 (auth) + E2 (import/lecture) fusionnés sur `main`.
+Statut : **PR-A + PR-B + PR-C implémentées** (branche `feat/e3-ai-contract-client`, PR #67) ·
+Prérequis : E1 (auth) + E2 (import/lecture) fusionnés sur `main`.
+
+Écarts PR-C (vs §7) :
+- **Consentement IA = 2ᵉ case sur l'écran 03**, révélée une fois « document fictif » confirmée (se lit
+  comme une étape sans modale — la maquette n'en dessine pas). Case + endpoint + `ConsentType`
+  distincts (AC2) ; texte nommant **Anthropic** (AC1). La ligne `ConsentLog AI_PROCESSING` est écrite
+  au clic « Lancer l'analyse » (`confirmAiConsent` → `startAnalysis`), pas au cochage.
+- Écran 04 : maquette node `1:16` (basse fidélité, itération 2 — pas de page « Hi-Fi » dans le fichier
+  Figma courant). Route `/dossiers/[id]` sans suffixe `/analyse` (le wireframe le montrait) : E4
+  réutilisera la même URL pour le résultat quand `analysisStatus === TERMINEE`.
+
+Écarts PR-B (vs §6/§8/§10) :
+- **Accès BDD du worker** : `server/database/analysis-store.ts` (couche **système**, non scopée
+  `userId`) plutôt que des méthodes ajoutées à `CaseFileRepository` (scopé). Raison : le worker n'a
+  pas d'utilisateur courant ; la route (`features/cases`) reste scopée et vérifie propriété +
+  consentement avant d'enfiler. Seul `requeueForAnalysis` est ajouté à `CaseFileRepository` (garde
+  409 / relance après ECHEC).
+- **Test du worker** : `runAnalysisJob()` appelé en direct (`analysis.worker.test.ts`), `analyzeLetter`
+  mocké — pas de `Worker` BullMQ ni de Redis dans `test/setup.ts`. La route `202/EN_ATTENTE` est testée
+  avec la file mockée (`cases.analyze.test.ts`). Redis reste ajouté à `docker-compose.yml` pour le
+  worker en local.
+- `lib/dates.ts` gagne `deriveDeadlineFromText` (type d'échéance **inféré**) pour les délais d'action,
+  que l'IA ne qualifie pas (US-3.5, `ActionIA.dueDateRawText` sans `type`).
 Modèle IA retenu avec l'utilisateur : **Claude Sonnet 5** (`claude-sonnet-5`, $2/$10 par Mtok) — rapport
 qualité/coût adapté à une extraction structurée sur texte court ; Opus 5 reste un repli si la précision
 sur le corpus s'avère insuffisante (voir §9, risque 9.5).
@@ -30,7 +53,7 @@ périmètre — E3 s'arrête à la persistance en base + l'écran d'attente (US 
 | # | Sujet | Décision | Alternative |
 |---|---|---|---|
 | 1 | Modèle IA | ✅ **tranché avec l'utilisateur — Claude Sonnet 5** (`claude-sonnet-5`) | Opus 5 (repli si précision insuffisante), Haiku 4.5 (écarté, risque sur les seuils ≥93 %/≥85 %) |
-| 2 | Sortie structurée | **`client.messages.parse()` + `zodOutputFormat(AnalysisResultSchema)`** (SDK `@anthropic-ai/sdk`, non-bêta) | Tool use forcé avec `strict: true` — rejeté : `parse()` colle exactement à l'AC « réponse invalide jamais persistée, `parsed_output` null sinon » |
+| 2 | Sortie structurée | **`messages.create()` + `output_config.format` (JSON Schema)** — écart vs l'intention initiale : `zodOutputFormat()`/`messages.parse()` du SDK importent `zod/v4` en interne, incompatible avec les schémas zod v3 du reste du contrat. `zod-to-json-schema` convertit `AnalysisResultSchema` en JSON Schema pour contraindre la sortie ; c'est notre propre `AnalysisResultSchema.safeParse()` qui valide (même garantie AC2, sans forker le contrat en zod v4) | Convertir tout `@capclair/contract` en zod v4 — écarté, risque de régression disproportionné sur E1/E2 pour ce seul appel ; tool use forcé — écarté, plus verbeux pour un besoin d'extraction pure |
 | 3 | `ConsentType.ANALYSE_IA` → `AI_PROCESSING` | ✅ **renommage maintenant** (`ALTER TYPE ... RENAME VALUE`) — reporté depuis ADR-006/ADR-015, aucune ligne n'utilise cette valeur à ce jour (grep confirmé) | Ajouter `AI_PROCESSING` en parallèle sans renommer — rejeté, ADR-006 promettait la réconciliation à E3 |
 | 4 | Prompt « distinct par organisme » (US-3.3 AC3) | **Un seul appel IA** : classification heuristique légère (mots-clés déterministes sur `extractedText` — « Caisse d'Allocations Familiales », « CPAM »/« Assurance Maladie », « France Travail »/« Pôle emploi ») sélectionne l'un des 3 gabarits de prompt organisme-spécifiques (vocabulaire, sigles, tournures propres à chaque organisme) ; repli sur un gabarit générique + `INDETERMINE` si aucun mot-clé ne matche | Classification par un premier appel IA séparé — rejeté : double le coût par courrier pour un gain marginal sur un texte de 1-2 pages |
 | 5 | Champ `type de courrier` (US-3.2 AC1, champ 2/13) | Stocké dans `CaseFile.title` (ADR-011 l'anticipait déjà : « écrasé à l'analyse ») | Nouveau champ `documentType` |
@@ -147,8 +170,9 @@ export type AnalysisResult = z.infer<typeof AnalysisResultSchema>;
 export async function analyzeLetter(text: string, organisme: HeuristicOrganisme): Promise<AnalysisResult | null>
 ```
 
-- `client.messages.parse({ model: "claude-sonnet-5", max_tokens: 4096, system: buildSystemPrompt(organisme), output_config: { format: zodOutputFormat(AnalysisResultSchema) }, messages: [{ role: "user", content: text }] })`.
-- `response.parsed_output` peut être `null` (échec de parsing) → l'appelant décide de la relance (§2 #12).
+- `client.messages.create({ model, max_tokens: 4096, system: buildSystemPrompt(organisme), output_config: { format: { type: "json_schema", schema: zodToJsonSchema(AnalysisResultSchema) } }, messages: [{ role: "user", content: text }] })`,
+  puis `AnalysisResultSchema.safeParse(JSON.parse(textBlock.text))` (§2 #2 — écart vs `zodOutputFormat`, zod v3/v4).
+- `safeParse().success === false` (JSON malformé ou schéma invalide) → l'appelant décide de la relance (§2 #12).
 - **Aucun retry réseau interne ici** (429/5xx) : laissé au SDK (`max_retries` par défaut) — pas de double
   logique de retry à maintenir.
 - Erreurs SDK typées (`Anthropic.APIError` et sous-classes) propagées telles quelles ; le service appelant

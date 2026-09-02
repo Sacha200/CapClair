@@ -29,13 +29,13 @@ npm run build --workspace @capclair/contract # à faire avant back/front
 # --- base de données (Docker) ---
 cd back
 cp .env.example .env                         # renseigner les variables
-npm run db:up                                # Postgres 17 sur le port hôte 5434
+npm run db:up                                # Postgres 17 (5434) + Redis 7 (6379)
 npm run prisma:deploy                        # applique les migrations + 6 catégories
 createdb ... capclair_test  # OU : psql "$DATABASE_URL" -c 'CREATE DATABASE capclair_test;'
 
 # --- lancer ---
 npm run dev            # API sur http://localhost:3001  (GET /api/sante)
-npm run worker         # worker BullMQ (aucune queue pour l'instant)
+npm run worker         # worker BullMQ (file « analysis » — analyse IA, E3)
 cd ../front
 cp .env.local.example .env.local
 npm run dev            # UI sur http://localhost:3000
@@ -106,6 +106,30 @@ Docker démarrée :
   Variables d'env : `STORAGE_DIR`, `PDF_MAX_PAGES`, `PDF_EXTRACT_TIMEOUT_MS`
   (voir `.env.example` ; le plafond d'upload vient du contrat partagé) ;
   `back/storage/` est git-ignoré.
+  **Consentement et appel à l'IA (E3/PR-A)** : `server/ai/` — seule frontière avec
+  le SDK Anthropic (`@anthropic-ai/sdk`), modèle `claude-sonnet-5` par défaut
+  (`ANTHROPIC_MODEL`), sortie contrainte par JSON Schema
+  (`zod-to-json-schema` + `AnalysisResultSchema.safeParse`, plan E3 §2 #2) ;
+  classification d'organisme par heuristique de mots-clés
+  (`server/ai/prompts.ts`, 15/15 sur le corpus) ; règles déterministes de date
+  (`lib/dates.ts`, D7 — dates/délais jamais calculés par l'IA). Contrat :
+  `contract/src/analysis.ts` (schéma à 13 champs, US-3.2).
+  **PR-B** : consentement `AI_PROCESSING` (`POST /api/dossiers/:id/consentement-ia`,
+  miroir de `confirm-fictional`), déclenchement asynchrone
+  (`POST /api/dossiers/:id/analyser` → 202/`EN_ATTENTE`, 403 sans consentement,
+  409 si déjà en cours) et polling (`GET /api/dossiers/:id`) —
+  `features/cases/*`, `RATE_LIMITS.analysis` ; file BullMQ `analysis`
+  (`server/queues/analysis.ts`, payload = id du dossier seul, US-8.2) ; worker
+  (`worker/analysis.ts` — `runAnalysisJob` : `EN_COURS` → IA (relance ×1 si
+  schéma invalide) → `lib/dates` → transaction `applyAnalysis` idempotente
+  préservant les lignes corrigées → `TERMINEE` ; toute erreur → `ECHEC` +
+  `AuditEvent` sans contenu de courrier). **PR-C** (front) : `lib/api/cases.ts`,
+  étape de consentement IA sur l'écran 03 (case distincte nommant Anthropic —
+  US-3.1 AC1/AC2), écran 04 `/dossiers/[id]` « attente d'analyse » (polling 2 s
+  sur `GET /api/dossiers/:id`, « Relancer » sur `ECHEC`). Nouvelle variable
+  obligatoire : `ANTHROPIC_API_KEY` (aucun défaut, US-8.4).
 - **`front/`** : Next.js 16 + Tailwind v4 (thème du design system, clair uniquement),
   écran 01 (connexion / inscription), pages mot-de-passe-oublié / réinitialiser,
+  écran 02 (tableau de bord, coquille), écran 03 (`/importer` — dépôt, aperçu,
+  consentement fictif + IA), écran 04 (`/dossiers/[id]` — attente d'analyse),
   middleware + garde serveur de l'espace connecté, pages 404/500. `next build` OK.
