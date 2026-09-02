@@ -22,10 +22,13 @@ export interface RequestOptions {
 export async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const base = isServer ? BACK_ORIGIN : BROWSER_API_BASE;
   const hasBody = options.body !== undefined;
+  // Un FormData part tel quel : le navigateur pose lui-même le content-type
+  // multipart avec sa boundary — ne surtout pas l'écraser (upload E2).
+  const isForm = typeof FormData !== "undefined" && options.body instanceof FormData;
   const headers: Record<string, string> = {};
   // Ne PAS annoncer un content-type JSON sans corps : Fastify rejette alors la
   // requête (FST_ERR_CTP_EMPTY_JSON_BODY → 400). Concerne p. ex. POST /auth/logout.
-  if (hasBody) headers["content-type"] = "application/json";
+  if (hasBody && !isForm) headers["content-type"] = "application/json";
   if (options.cookieHeader) headers.cookie = options.cookieHeader;
 
   let res: Response;
@@ -33,7 +36,7 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
     res = await fetch(`${base}${path}`, {
       method: options.method ?? "GET",
       headers,
-      body: hasBody ? JSON.stringify(options.body) : undefined,
+      body: hasBody ? (isForm ? (options.body as FormData) : JSON.stringify(options.body)) : undefined,
       credentials: "include",
       cache: "no-store",
     });

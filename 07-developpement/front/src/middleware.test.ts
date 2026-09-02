@@ -18,6 +18,12 @@ describe("middleware — protection des routes (US-1.4)", () => {
     expect(location).toContain(`next=${encodeURIComponent("/dashboard/foo?a=1")}`);
   });
 
+  it("/importer sans cookie → /connexion?next=/importer (E2)", () => {
+    const res = middleware(request("/importer", false));
+    expect(res.status).toBe(307);
+    expect(res.headers.get("location")).toContain(`next=${encodeURIComponent("/importer")}`);
+  });
+
   it("laisse passer quand le cookie de session est présent", () => {
     const res = middleware(request("/dossiers/abc", true));
     expect(res.headers.get("location")).toBeNull();
