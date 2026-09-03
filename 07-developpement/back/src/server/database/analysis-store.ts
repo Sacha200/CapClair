@@ -165,28 +165,34 @@ export async function applyAnalysis(
   await prisma.$transaction(async (tx) => {
     const exists = await tx.caseFile.findFirst({
       where: { id: caseFileId, deletedAt: null },
-      select: { id: true },
+      select: { id: true, userLockedFields: true },
     });
     if (!exists) throw new NotFoundError("caseFile");
 
-    await tx.caseFile.update({
-      where: { id: caseFileId },
-      data: {
-        organisme: result.organisme,
-        title: result.title,
-        summary: result.summary,
-        documentDate: result.documentDate,
-        documentDateSourceExcerpt: result.documentDateSourceExcerpt,
-        warnings: result.warnings,
-        mainDeadline: result.mainDeadline?.date ?? null,
-        mainDeadlineType: result.mainDeadline?.type ?? null,
-        mainDeadlineSourceExcerpt: result.mainDeadline?.sourceExcerpt ?? null,
-        mainDeadlineConfidence: result.mainDeadline?.confidence ?? null,
-        status: "A_FAIRE",
-        analysisStatus: "TERMINEE",
-        lastActivityAt: new Date(),
-      },
-    });
+    // US-4.4 AC3 — un champ scalaire corrigé à la main (`userLockedFields`)
+    // n'est plus réécrit par une ré-analyse. `summary`/`warnings` et les
+    // statuts ne sont pas verrouillables (aucune AC ne le demande).
+    const locked = new Set(exists.userLockedFields);
+    const data: Prisma.CaseFileUpdateInput = {
+      summary: result.summary,
+      warnings: result.warnings,
+      status: "A_FAIRE",
+      analysisStatus: "TERMINEE",
+      lastActivityAt: new Date(),
+    };
+    if (!locked.has("organisme")) data.organisme = result.organisme;
+    if (!locked.has("title")) data.title = result.title;
+    if (!locked.has("documentDate")) {
+      data.documentDate = result.documentDate;
+      data.documentDateSourceExcerpt = result.documentDateSourceExcerpt;
+    }
+    if (!locked.has("mainDeadline")) {
+      data.mainDeadline = result.mainDeadline?.date ?? null;
+      data.mainDeadlineType = result.mainDeadline?.type ?? null;
+      data.mainDeadlineSourceExcerpt = result.mainDeadline?.sourceExcerpt ?? null;
+      data.mainDeadlineConfidence = result.mainDeadline?.confidence ?? null;
+    }
+    await tx.caseFile.update({ where: { id: caseFileId }, data });
 
     // ExtractedInformation : remplacement partiel — on ne touche jamais une
     // ligne corrigée par l'utilisateur (US-4.4, la correction prime).

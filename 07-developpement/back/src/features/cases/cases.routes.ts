@@ -2,11 +2,14 @@
  * Routes de dossiers (préfixe `/api`, scope gardé — voir app.ts).
  *
  * - `GET  /api/dossiers/:id`                 statut d'analyse (polling écran 04)
+ * - `GET  /api/dossiers/:id/resultat`        graphe complet de l'analyse (écran 05, E4)
  * - `POST /api/dossiers/:id/consentement-ia` consentement IA (US-3.1), miroir
  *                                            de `confirm-fictional`
  * - `POST /api/dossiers/:id/analyser`        déclenche l'analyse asynchrone (D8)
  *
- * Toutes portent `config: RATE_LIMITS.analysis` (clôt US-8.1 #48).
+ * Les routes de *déclenchement* portent `config: RATE_LIMITS.analysis` (US-8.1
+ * #48) ; les *lectures* d'écran (`:id`, `:id/resultat`) non — seul le plafond
+ * global s'applique.
  */
 import type { FastifyPluginAsync } from "fastify";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
@@ -34,6 +37,19 @@ export const caseRoutes: FastifyPluginAsync = async (fastify) => {
       const db = forUser(requireUser(request).id);
       const caseFile = await casesService.getCaseStatus(db, request.params.id);
       return toCaseStatusDto(caseFile);
+    },
+  );
+
+  // Résultat d'analyse (écran 05, US-4.1 → US-4.3) : 200 + graphe complet si
+  // `TERMINEE`, 409 `analysis_not_ready` sinon (le front retombe sur l'écran
+  // d'attente), 404 si absent/autre compte. Lecture d'écran → pas de preset
+  // serré, comme `GET /api/dossiers/:id`.
+  app.get(
+    "/api/dossiers/:id/resultat",
+    { schema: { params: IdParamsSchema } },
+    async (request) => {
+      const db = forUser(requireUser(request).id);
+      return casesService.getCaseResult(db, request.params.id);
     },
   );
 

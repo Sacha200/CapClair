@@ -39,6 +39,37 @@ export class CaseFileRepository {
     return row;
   }
 
+  /**
+   * Graphe complet d'un dossier pour l'écran de résultat (E4, US-4.1). Scopé
+   * `userId` ; `NotFoundError` (→ 404) si absent/autre compte/supprimé.
+   *
+   * Le `select` du document ne remonte que `extractedText` : il sert de base à
+   * la vérification US-4.2 (l'extrait est-il un passage littéral du courrier ?)
+   * et n'est jamais renvoyé tel quel — seul le booléen `verifiable` sort du
+   * mapper (US-8.2).
+   */
+  async findResultForUser(id: string) {
+    const row = await this.prisma.caseFile.findFirst({
+      where: { id, userId: this.userId, deletedAt: null },
+      include: {
+        documents: {
+          orderBy: { createdAt: "desc" },
+          take: 1,
+          select: { extractedText: true },
+        },
+        extractedInfos: {
+          include: { category: true },
+          orderBy: { createdAt: "asc" },
+        },
+        actionItems: { orderBy: { position: "asc" } },
+        requiredDocs: { orderBy: { createdAt: "asc" } },
+        responseDraft: true,
+      },
+    });
+    if (!row) throw new NotFoundError("caseFile");
+    return row;
+  }
+
   /** Dossier créé à l'import (E2) : organisme/titre provisoires, écrasés à l'analyse (E3). */
   create(data: { organisme: Organisme; title: string }) {
     return this.prisma.caseFile.create({
