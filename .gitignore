@@ -65,6 +65,11 @@ pids/
 .idea/
 *.swp
 
+# ---- Claude Code ----
+# Réglages locaux par machine (règles de permission perso) : non versionnés.
+# .claude/agents/ et .claude/settings.json (si créé) restent suivis.
+.claude/settings.local.json
+
 # ---- Système ----
 .DS_Store
 Thumbs.db
