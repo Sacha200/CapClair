@@ -11,11 +11,30 @@ import type { UserScopedDb } from "../../server/database/context.js";
 import { AppError } from "../../lib/errors.js";
 import { LEGAL_BUNDLE_VERSION } from "../../lib/legal.js";
 import { enqueueAnalysis } from "../../server/queues/analysis.js";
-import { ANALYSIS_MESSAGES } from "./cases.dto.js";
+import { toCaseResultDto } from "./cases.mapper.js";
+import { ANALYSIS_MESSAGES, type CaseFileResultResponse } from "./cases.dto.js";
 
 /** 404 (jamais 403) si le dossier n'existe pas ou appartient à un autre compte. */
 export function getCaseStatus(db: UserScopedDb, caseFileId: string) {
   return db.caseFiles.findByIdForUser(caseFileId);
+}
+
+/**
+ * Graphe complet d'un dossier pour l'écran de résultat (E4, US-4.1 → US-4.3).
+ *  - 404 si absent/autre compte (via le repository scopé) ;
+ *  - 409 `analysis_not_ready` tant que `analysisStatus !== "TERMINEE"` — le
+ *    front retombe alors sur l'écran d'attente (polling `GET /api/dossiers/:id`).
+ * Le mapper dérive `verifiable` (US-4.2) et le niveau de confiance affiché.
+ */
+export async function getCaseResult(
+  db: UserScopedDb,
+  caseFileId: string,
+): Promise<CaseFileResultResponse> {
+  const row = await db.caseFiles.findResultForUser(caseFileId);
+  if (row.analysisStatus !== "TERMINEE") {
+    throw new AppError(409, ANALYSIS_MESSAGES.analysisNotReady, { code: "analysis_not_ready" });
+  }
+  return toCaseResultDto(row, row.documents[0]?.extractedText ?? "");
 }
 
 /**

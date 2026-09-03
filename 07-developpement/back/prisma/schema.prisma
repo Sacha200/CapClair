@@ -192,6 +192,11 @@ model CaseFile {
   /// US-3.2 champ 13/13 — avertissements spécifiques au courrier (ex. « suspension
   /// possible du versement »), distincts de l'avertissement fixe de l'écran (US-4.1 AC3).
   warnings       String[]  @default([])
+  /// US-4.4 AC3 — champs scalaires verrouillés par une correction manuelle :
+  /// une ré-analyse ne les écrase plus. Valeurs (contrat `LOCKABLE_FIELDS`) :
+  /// "organisme" | "title" | "documentDate" | "mainDeadline". Les lignes
+  /// ExtractedInformation gardent leur propre flag `isUserCorrected`.
+  userLockedFields String[] @default([])
   lastActivityAt DateTime  @default(now())
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt

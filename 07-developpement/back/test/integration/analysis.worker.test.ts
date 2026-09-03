@@ -206,4 +206,32 @@ describe("runAnalysisJob", () => {
     expect(infos.filter((i) => i.isUserCorrected)).toHaveLength(1);
     expect(await prisma.actionItem.count({ where: { caseFileId } })).toBe(1);
   });
+
+  it("champ scalaire verrouillé (userLockedFields) non écrasé par la ré-analyse (US-4.4 AC3)", async () => {
+    analyzeLetterMock.mockResolvedValue({
+      result: validResult({ organisme: "CPAM", typeCourrier: "Notification de l'Assurance Maladie" }),
+    });
+    const { caseFileId } = await seedCase();
+
+    // Simule une correction manuelle : l'utilisateur a fixé organisme + titre.
+    await prisma.caseFile.update({
+      where: { id: caseFileId },
+      data: {
+        organisme: "FRANCE_TRAVAIL",
+        title: "Titre corrigé à la main",
+        userLockedFields: ["organisme", "title"],
+      },
+    });
+
+    await runAnalysisJob(caseFileId);
+
+    const caseFile = await prisma.caseFile.findUniqueOrThrow({ where: { id: caseFileId } });
+    expect(caseFile.analysisStatus).toBe("TERMINEE");
+    // Champs verrouillés : conservés malgré la réponse IA divergente.
+    expect(caseFile.organisme).toBe("FRANCE_TRAVAIL");
+    expect(caseFile.title).toBe("Titre corrigé à la main");
+    // Champs non verrouillables : rafraîchis normalement.
+    expect(caseFile.summary).toBe(SUMMARY);
+    expect(caseFile.documentDate?.toISOString()).toBe("2026-07-03T00:00:00.000Z");
+  });
 });

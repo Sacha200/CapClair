@@ -1,0 +1,11 @@
+-- E4 — Consultation et vérification du dossier.
+--
+-- Champs scalaires verrouillés par une correction manuelle (US-4.4 AC3) :
+-- `applyAnalysis` (server/database/analysis-store.ts) les omet lors d'une
+-- ré-analyse. Valeurs admises côté applicatif : "organisme" | "title" |
+-- "documentDate" | "mainDeadline" (constante `LOCKABLE_FIELDS` du contrat).
+--
+-- Migration additive, sûre sur les lignes existantes (défaut '{}') : pas de
+-- ALTER TYPE, pas de backfill. La vérification US-4.2 (« extrait non
+-- vérifiable ») est calculée à la lecture, elle n'ajoute aucune colonne.
+ALTER TABLE "CaseFile" ADD COLUMN "userLockedFields" TEXT[] NOT NULL DEFAULT '{}';
