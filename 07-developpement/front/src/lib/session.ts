@@ -10,12 +10,21 @@ import { getSessionWithCookie } from "@/lib/api/auth";
  * absent, `401`, back injoignable, réponse inattendue. Un back en panne rend
  * l'utilisateur « non connecté », il ne fait pas planter la page.
  */
-export async function getSession(): Promise<SessionUser | null> {
+/**
+ * Reconstruit l'en-tête `Cookie` de la requête entrante, pour le relayer au
+ * back depuis un server component (les appels RSC ne portent pas le cookie
+ * first-party automatiquement). Chaîne vide si aucun cookie.
+ */
+export async function readCookieHeader(): Promise<string> {
   const store = await cookies();
-  const cookieHeader = store
+  return store
     .getAll()
     .map((c) => `${c.name}=${c.value}`)
     .join("; ");
+}
+
+export async function getSession(): Promise<SessionUser | null> {
+  const cookieHeader = await readCookieHeader();
   if (!cookieHeader) return null;
 
   try {
