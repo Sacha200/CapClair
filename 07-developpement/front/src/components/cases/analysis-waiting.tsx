@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { RiLoader4Line } from "@remixicon/react";
 import { ANALYSIS_MESSAGES, type CaseFileStatusResponse } from "@capclair/contract";
 import { getCaseFile, startAnalysis } from "@/lib/api/cases";
@@ -39,10 +40,22 @@ function messageFor(err: unknown, fallback: string): string {
 }
 
 export function AnalysisWaiting({ caseFileId }: { caseFileId: string }) {
+  const router = useRouter();
   const [view, setView] = useState<View>("pending");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [relaunching, setRelaunching] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
+  const refreshed = useRef(false);
+
+  // Au passage à TERMINEE : on relance le rendu du server component, qui
+  // re-fetch `…/resultat` et bascule sur l'écran 05. Le bloc « done » ci-dessous
+  // n'est qu'un état transitoire anti-flash le temps de ce refresh.
+  useEffect(() => {
+    if (view === "done" && !refreshed.current) {
+      refreshed.current = true;
+      router.refresh();
+    }
+  }, [view, router]);
 
   useEffect(() => {
     let cancelled = false;
@@ -130,13 +143,15 @@ export function AnalysisWaiting({ caseFileId }: { caseFileId: string }) {
 
       {view === "done" ? (
         <div className="flex flex-col items-center gap-3 text-center">
-          <p className="text-base font-semibold text-text-strong" role="status">
-            Analyse terminée.
+          <span
+            className="flex size-[70px] items-center justify-center rounded-full border border-border bg-bg-subtle"
+            aria-hidden
+          >
+            <RiLoader4Line size={32} className="animate-spin text-primary" />
+          </span>
+          <p className="mt-2 text-base font-semibold text-text-strong" role="status">
+            Analyse terminée — affichage du résultat…
           </p>
-          <p className="max-w-md text-sm text-text-muted">
-            Le détail du résultat s&apos;affichera ici prochainement.
-          </p>
-          <div className="mt-3">{backToDashboard}</div>
         </div>
       ) : null}
 

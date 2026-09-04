@@ -4,6 +4,7 @@
  */
 import {
   CASE_FILE_PATHS,
+  type CaseFileResultResponse,
   type CaseFileStatusResponse,
   type StartAnalysisResponse,
 } from "@capclair/contract";
@@ -12,6 +13,20 @@ import { apiRequest } from "./client";
 /** Statut d'analyse d'un dossier — support du polling de l'écran 04. */
 export function getCaseFile(id: string): Promise<CaseFileStatusResponse> {
   return apiRequest(CASE_FILE_PATHS.detail(id), { method: "GET" });
+}
+
+/**
+ * Graphe complet d'un dossier analysé — écran 05 (E4). Appelé une seule fois
+ * par le server component : `200` seulement si `analysisStatus === "TERMINEE"`,
+ * sinon `ApiError` (`409` `analysis_not_ready` tant que l'analyse tourne, `404`
+ * si le dossier n'existe pas / appartient à un autre compte). Côté serveur, on
+ * relaie l'en-tête `Cookie` de la requête entrante.
+ */
+export function getCaseResult(
+  id: string,
+  cookieHeader?: string,
+): Promise<CaseFileResultResponse> {
+  return apiRequest(CASE_FILE_PATHS.result(id), { method: "GET", cookieHeader });
 }
 
 /**
