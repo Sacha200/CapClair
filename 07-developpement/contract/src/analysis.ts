@@ -249,3 +249,24 @@ export const UpdateCaseScalarsInputSchema = z
     message: ANALYSIS_MESSAGES.nothingToUpdate,
   });
 export type UpdateCaseScalarsInput = z.infer<typeof UpdateCaseScalarsInputSchema>;
+
+// ===========================================================================
+// E4 US-4.5 — Historique du dossier
+// ===========================================================================
+
+/**
+ * Une entrée d'historique : horodatage + libellé FR déjà humanisé côté serveur
+ * (jamais un `eventType` technique, AC2). Ne porte aucun contenu de courrier (AC3).
+ */
+export const HistoryEntrySchema = z.object({
+  id: z.string().uuid(),
+  at: z.string().datetime(),
+  label: z.string(),
+});
+export type HistoryEntry = z.infer<typeof HistoryEntrySchema>;
+
+export const CaseFileHistoryResponseSchema = z.object({
+  /** Du plus récent au plus ancien. */
+  entries: z.array(HistoryEntrySchema),
+});
+export type CaseFileHistoryResponse = z.infer<typeof CaseFileHistoryResponseSchema>;

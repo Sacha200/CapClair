@@ -408,4 +408,22 @@ export class AuditEventRepository extends LinkedRepository {
       },
     });
   }
+
+  /**
+   * Historique d'un dossier (US-4.5), du plus récent au plus ancien. Ne
+   * remonte que l'id, le type et l'horodatage — jamais `metadata`, qui n'a pas
+   * vocation à être affiché. 404 si le dossier n'appartient pas au compte.
+   */
+  async listForCaseFileForUser(caseFileId: string) {
+    const caseFile = await this.prisma.caseFile.findFirst({
+      where: { id: caseFileId, ...this.caseFileScope },
+      select: { id: true },
+    });
+    if (!caseFile) throw new NotFoundError("caseFile");
+    return this.prisma.auditEvent.findMany({
+      where: { caseFileId },
+      orderBy: { createdAt: "desc" },
+      select: { id: true, eventType: true, createdAt: true },
+    });
+  }
 }

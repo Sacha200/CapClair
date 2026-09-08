@@ -28,4 +28,6 @@ export const CASE_FILE_PATHS = {
   result: (id: string) => `/api/dossiers/${id}/resultat`,
   updateInfo: (id: string, infoId: string) => `/api/dossiers/${id}/informations/${infoId}`,
   deadline: (id: string) => `/api/dossiers/${id}/echeance`,
+  // E4 US-4.5 — historique du dossier.
+  history: (id: string) => `/api/dossiers/${id}/historique`,
 } as const;

@@ -12,9 +12,11 @@ import { AppError } from "../../lib/errors.js";
 import { LEGAL_BUNDLE_VERSION } from "../../lib/legal.js";
 import { enqueueAnalysis } from "../../server/queues/analysis.js";
 import { rescheduleForCaseFile } from "../reminders/reschedule.js";
+import { historyLabel } from "./history-label.js";
 import { toCaseResultDto } from "./cases.mapper.js";
 import {
   ANALYSIS_MESSAGES,
+  type CaseFileHistoryResponse,
   type CaseFileResultResponse,
   type UpdateCaseScalarsInput,
   type UpdateExtractedInfoInput,
@@ -186,4 +188,23 @@ export async function updateCaseScalars(
     eventType: "case.updated",
     metadata: { fields: touched },
   });
+}
+
+/**
+ * US-4.5 — historique du dossier : entrées du plus récent au plus ancien,
+ * libellés FR (aucun `eventType` technique, AC2), sans aucun contenu de
+ * courrier (AC3 — `metadata` n'est même pas lu). 404 si absent/autre compte.
+ */
+export async function getCaseHistory(
+  db: UserScopedDb,
+  caseFileId: string,
+): Promise<CaseFileHistoryResponse> {
+  const events = await db.auditEvents.listForCaseFileForUser(caseFileId);
+  return {
+    entries: events.map((event) => ({
+      id: event.id,
+      at: event.createdAt.toISOString(),
+      label: historyLabel(event.eventType),
+    })),
+  };
 }

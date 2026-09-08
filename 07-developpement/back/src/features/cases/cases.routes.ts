@@ -3,6 +3,7 @@
  *
  * - `GET   /api/dossiers/:id`                       statut d'analyse (polling écran 04)
  * - `GET   /api/dossiers/:id/resultat`              graphe complet de l'analyse (écran 05, E4)
+ * - `GET   /api/dossiers/:id/historique`            historique du dossier (US-4.5)
  * - `POST  /api/dossiers/:id/consentement-ia`       consentement IA (US-3.1)
  * - `POST  /api/dossiers/:id/analyser`              déclenche l'analyse asynchrone (D8)
  * - `PATCH /api/dossiers/:id/informations/:infoId`  corrige une info extraite (US-4.4)
@@ -11,7 +12,7 @@
  *
  * Les routes de *déclenchement* et d'*écriture* (POST, PATCH) portent
  * `config: RATE_LIMITS.analysis` (US-8.1 #48) ; les *lectures* d'écran
- * (`:id`, `:id/resultat`) non — seul le plafond global s'applique.
+ * (`:id`, `:id/resultat`, `:id/historique`) non — seul le plafond global s'applique.
  */
 import type { FastifyPluginAsync } from "fastify";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
@@ -58,6 +59,18 @@ export const caseRoutes: FastifyPluginAsync = async (fastify) => {
     async (request) => {
       const db = forUser(requireUser(request).id);
       return casesService.getCaseResult(db, request.params.id);
+    },
+  );
+
+  // Historique du dossier (US-4.5) : entrées du plus récent au plus ancien,
+  // libellés FR (aucun nom technique, AC2), aucun contenu de courrier (AC3).
+  // Lecture d'écran → pas de preset serré.
+  app.get(
+    "/api/dossiers/:id/historique",
+    { schema: { params: IdParamsSchema } },
+    async (request) => {
+      const db = forUser(requireUser(request).id);
+      return casesService.getCaseHistory(db, request.params.id);
     },
   );
 
