@@ -1,6 +1,7 @@
 import type { CaseFileResultResponse } from "@capclair/contract";
 import { formatFrenchDate, organismeLabel } from "@/lib/cases/result-format";
 import { ActionsList } from "./actions-list";
+import { CaseHeaderEdit } from "./case-header-edit";
 import { ConfidenceRecapBanner } from "./confidence-recap-banner";
 import { ExtractedInfoList } from "./extracted-info-list";
 import { MainDeadlineCard } from "./main-deadline-card";
@@ -22,9 +23,10 @@ import { WarningsNote } from "./warnings-note";
  */
 export function AnalysisResult({
   data,
+  caseFileId,
 }: {
   data: CaseFileResultResponse;
-  /** Utilisé par la PR-C (formulaires de correction). */
+  /** Fourni ⇒ affordances de correction manuelle (US-4.4). */
   caseFileId?: string;
 }) {
   const received = formatFrenchDate(data.documentDate);
@@ -38,6 +40,14 @@ export function AnalysisResult({
             {organismeLabel(data.organisme)}
             {received ? ` · courrier reçu le ${received}` : null}
           </p>
+          {caseFileId ? (
+            <CaseHeaderEdit
+              caseFileId={caseFileId}
+              organisme={data.organisme}
+              title={data.title}
+              documentDate={data.documentDate}
+            />
+          ) : null}
         </div>
         {/* Statut du dossier : « À faire » à l'issue de l'analyse. La gestion
             du cycle de vie du statut est l'epic E5 (US-5.x). */}
@@ -48,7 +58,11 @@ export function AnalysisResult({
 
       <div className="mt-6 lg:grid lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start lg:gap-6">
         <div className="space-y-4">
-          <MainDeadlineCard deadline={data.mainDeadline} />
+          <MainDeadlineCard
+            deadline={data.mainDeadline}
+            caseFileId={caseFileId}
+            documentDate={data.documentDate}
+          />
           <ResultWarningBanner />
           <ConfidenceRecapBanner infos={data.infosToVerify} />
           <SummarySection summary={data.summary} />
@@ -58,7 +72,7 @@ export function AnalysisResult({
         </div>
 
         <div className="mt-4 space-y-4 lg:mt-0">
-          <ExtractedInfoList infos={data.informations} />
+          <ExtractedInfoList infos={data.informations} caseFileId={caseFileId} />
           <ResponseDraftPreview draft={data.responseDraft} />
         </div>
       </div>
