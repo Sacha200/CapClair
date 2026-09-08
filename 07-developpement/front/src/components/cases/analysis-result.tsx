@@ -2,6 +2,7 @@ import type { CaseFileResultResponse } from "@capclair/contract";
 import { formatFrenchDate, organismeLabel } from "@/lib/cases/result-format";
 import { ActionsList } from "./actions-list";
 import { CaseHeaderEdit } from "./case-header-edit";
+import { CaseHistory } from "./case-history";
 import { ConfidenceRecapBanner } from "./confidence-recap-banner";
 import { ExtractedInfoList } from "./extracted-info-list";
 import { MainDeadlineCard } from "./main-deadline-card";
@@ -76,6 +77,14 @@ export function AnalysisResult({
           <ResponseDraftPreview draft={data.responseDraft} />
         </div>
       </div>
+
+      {/* US-4.5 — hors des 6 sections imposées par US-4.1 : rendu en fin d'écran,
+          pleine largeur. Chargé côté client, masqué s'il est vide. */}
+      {caseFileId ? (
+        <div className="mt-4">
+          <CaseHistory caseFileId={caseFileId} />
+        </div>
+      ) : null}
     </div>
   );
 }
