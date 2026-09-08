@@ -4,6 +4,7 @@
  */
 import {
   CASE_FILE_PATHS,
+  type CaseFileHistoryResponse,
   type CaseFileResultResponse,
   type CaseFileStatusResponse,
   type StartAnalysisResponse,
@@ -77,4 +78,15 @@ export function updateCaseScalars(
   body: UpdateCaseScalarsInput,
 ): Promise<{ ok: true }> {
   return apiRequest(CASE_FILE_PATHS.detail(id), { method: "PATCH", body });
+}
+
+/**
+ * US-4.5 — historique du dossier (entrées du plus récent au plus ancien,
+ * libellés FR). `404` si le dossier n'existe pas / appartient à un autre compte.
+ */
+export function getCaseHistory(
+  id: string,
+  cookieHeader?: string,
+): Promise<CaseFileHistoryResponse> {
+  return apiRequest(CASE_FILE_PATHS.history(id), { method: "GET", cookieHeader });
 }

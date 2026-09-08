@@ -8,7 +8,11 @@ const notFound = vi.fn(() => {
   throw new Error("NEXT_NOT_FOUND");
 });
 
-vi.mock("@/lib/api/cases", () => ({ getCaseResult: (...a: unknown[]) => getCaseResult(...a) }));
+vi.mock("@/lib/api/cases", () => ({
+  getCaseResult: (...a: unknown[]) => getCaseResult(...a),
+  // Historique (PR-D) : chargé côté client par <CaseHistory> dans l'écran 05.
+  getCaseHistory: () => Promise.resolve({ entries: [] }),
+}));
 vi.mock("@/lib/session", () => ({ readCookieHeader: () => Promise.resolve("capclair_session=x") }));
 // `useRouter` : requis depuis la PR-C — l'écran 05 rend des formulaires de
 // correction (client components) qui l'appellent au rendu.
