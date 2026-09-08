@@ -11,8 +11,25 @@ import type { UserScopedDb } from "../../server/database/context.js";
 import { AppError } from "../../lib/errors.js";
 import { LEGAL_BUNDLE_VERSION } from "../../lib/legal.js";
 import { enqueueAnalysis } from "../../server/queues/analysis.js";
+import { rescheduleForCaseFile } from "../reminders/reschedule.js";
 import { toCaseResultDto } from "./cases.mapper.js";
-import { ANALYSIS_MESSAGES, type CaseFileResultResponse } from "./cases.dto.js";
+import {
+  ANALYSIS_MESSAGES,
+  type CaseFileResultResponse,
+  type UpdateCaseScalarsInput,
+  type UpdateExtractedInfoInput,
+  type UpdateMainDeadlineInput,
+} from "./cases.dto.js";
+
+/** "YYYY-MM-DD" → `Date` à minuit UTC (dates de calendrier, pas d'heure locale). */
+function isoDateToUtc(iso: string): Date {
+  return new Date(`${iso}T00:00:00.000Z`);
+}
+
+/** Minuit UTC du jour d'une `Date` (comparaison de dates de calendrier). */
+function startOfUtcDay(date: Date): Date {
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+}
 
 /** 404 (jamais 403) si le dossier n'existe pas ou appartient à un autre compte. */
 export function getCaseStatus(db: UserScopedDb, caseFileId: string) {
@@ -93,4 +110,80 @@ export async function startAnalysis(
 
   await enqueue(caseFileId);
   return { analysisStatus: "EN_ATTENTE" };
+}
+
+/**
+ * US-4.4 — corrige une information extraite. `isUserCorrected` passe à `true`
+ * (la ligne ne sera plus écrasée par une ré-analyse) et l'action est
+ * journalisée. La métadonnée ne porte que l'id et le code de catégorie —
+ * jamais la valeur corrigée (US-8.2). 404 si l'info n'est pas dans ce dossier
+ * de ce compte.
+ */
+export async function correctInformation(
+  db: UserScopedDb,
+  caseFileId: string,
+  infoId: string,
+  input: UpdateExtractedInfoInput,
+): Promise<void> {
+  const row = await db.extractedInfos.updateForUser(caseFileId, infoId, input);
+  await db.auditEvents.record({
+    caseFileId,
+    eventType: "information.corrected",
+    metadata: { infoId, categoryCode: row.category.code },
+  });
+}
+
+/**
+ * US-4.4 AC5 — corrige l'échéance principale (date de calendrier). Refuse une
+ * date antérieure à la date du courrier (400 `deadline_before_document`, règle
+ * US-3.6 AC5). Recalcule et écrit la date côté serveur, journalise, puis
+ * appelle le hook de reprogrammation des rappels (no-op tant que E7 n'existe
+ * pas — voir plan §8.1). 404 si absent/autre compte.
+ */
+export async function correctMainDeadline(
+  db: UserScopedDb,
+  caseFileId: string,
+  input: UpdateMainDeadlineInput,
+): Promise<void> {
+  const caseFile = await db.caseFiles.findByIdForUser(caseFileId);
+  const date = isoDateToUtc(input.date);
+  if (
+    caseFile.documentDate &&
+    date.getTime() < startOfUtcDay(caseFile.documentDate).getTime()
+  ) {
+    throw new AppError(400, ANALYSIS_MESSAGES.deadlineBeforeDocument, {
+      code: "deadline_before_document",
+    });
+  }
+  await db.caseFiles.setCorrectedDeadlineForUser(caseFileId, date);
+  await db.auditEvents.record({ caseFileId, eventType: "deadline.corrected", metadata: {} });
+  await rescheduleForCaseFile(caseFileId);
+}
+
+/**
+ * US-4.4 AC1 — corrige organisme / type de courrier / date du courrier. Au
+ * moins une clé (garanti par le schéma). Les champs touchés sont verrouillés
+ * contre la ré-analyse (AC3) et listés dans la trace `AuditEvent`. 404 si
+ * absent/autre compte.
+ */
+export async function updateCaseScalars(
+  db: UserScopedDb,
+  caseFileId: string,
+  input: UpdateCaseScalarsInput,
+): Promise<void> {
+  const { touched } = await db.caseFiles.updateScalarsForUser(caseFileId, {
+    organisme: input.organisme,
+    title: input.title,
+    documentDate:
+      input.documentDate === undefined
+        ? undefined
+        : input.documentDate === null
+          ? null
+          : isoDateToUtc(input.documentDate),
+  });
+  await db.auditEvents.record({
+    caseFileId,
+    eventType: "case.updated",
+    metadata: { fields: touched },
+  });
 }
