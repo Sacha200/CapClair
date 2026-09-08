@@ -123,6 +123,13 @@ export async function uploadDocument(
       extractedText: upload.extractedText,
       extractedTextHash: upload.extractedTextHash,
     });
+    // US-4.5 — trace « création » du dossier pour l'historique. Best-effort :
+    // l'import est déjà persisté, un échec ici ne doit pas le faire échouer
+    // (ni déclencher la purge du fichier). Métadonnée vide : jamais le nom du
+    // fichier d'origine ni de contenu (US-8.2).
+    await db.auditEvents
+      .record({ caseFileId: caseFile.id, eventType: "document.imported" })
+      .catch(() => undefined);
     return {
       documentId: document.id,
       caseFileId: caseFile.id,
