@@ -1,15 +1,17 @@
 /**
  * Routes de dossiers (préfixe `/api`, scope gardé — voir app.ts).
  *
- * - `GET  /api/dossiers/:id`                 statut d'analyse (polling écran 04)
- * - `GET  /api/dossiers/:id/resultat`        graphe complet de l'analyse (écran 05, E4)
- * - `POST /api/dossiers/:id/consentement-ia` consentement IA (US-3.1), miroir
- *                                            de `confirm-fictional`
- * - `POST /api/dossiers/:id/analyser`        déclenche l'analyse asynchrone (D8)
+ * - `GET   /api/dossiers/:id`                       statut d'analyse (polling écran 04)
+ * - `GET   /api/dossiers/:id/resultat`              graphe complet de l'analyse (écran 05, E4)
+ * - `POST  /api/dossiers/:id/consentement-ia`       consentement IA (US-3.1)
+ * - `POST  /api/dossiers/:id/analyser`              déclenche l'analyse asynchrone (D8)
+ * - `PATCH /api/dossiers/:id/informations/:infoId`  corrige une info extraite (US-4.4)
+ * - `PATCH /api/dossiers/:id/echeance`              corrige l'échéance principale (US-4.4 AC5)
+ * - `PATCH /api/dossiers/:id`                       corrige organisme/type/date (US-4.4 AC1)
  *
- * Les routes de *déclenchement* portent `config: RATE_LIMITS.analysis` (US-8.1
- * #48) ; les *lectures* d'écran (`:id`, `:id/resultat`) non — seul le plafond
- * global s'applique.
+ * Les routes de *déclenchement* et d'*écriture* (POST, PATCH) portent
+ * `config: RATE_LIMITS.analysis` (US-8.1 #48) ; les *lectures* d'écran
+ * (`:id`, `:id/resultat`) non — seul le plafond global s'applique.
  */
 import type { FastifyPluginAsync } from "fastify";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
@@ -19,9 +21,15 @@ import { forUser } from "../../server/database/context.js";
 import { requireUser } from "../../server/auth/guard.js";
 import * as casesService from "./cases.service.js";
 import { toCaseStatusDto } from "./cases.mapper.js";
-import { ConfirmAiConsentInputSchema } from "./cases.dto.js";
+import {
+  ConfirmAiConsentInputSchema,
+  UpdateCaseScalarsInputSchema,
+  UpdateExtractedInfoInputSchema,
+  UpdateMainDeadlineInputSchema,
+} from "./cases.dto.js";
 
 const IdParamsSchema = z.object({ id: z.string().uuid() });
+const IdInfoParamsSchema = z.object({ id: z.string().uuid(), infoId: z.string().uuid() });
 
 export const caseRoutes: FastifyPluginAsync = async (fastify) => {
   const app = fastify.withTypeProvider<ZodTypeProvider>();
@@ -78,6 +86,57 @@ export const caseRoutes: FastifyPluginAsync = async (fastify) => {
       const db = forUser(requireUser(request).id);
       const result = await casesService.startAnalysis(db, request.params.id);
       return reply.code(202).send(result);
+    },
+  );
+
+  // Correction d'une information extraite (US-4.4) : pose `isUserCorrected`,
+  // journalise. 404 si l'info n'est pas dans ce dossier de ce compte.
+  app.patch(
+    "/api/dossiers/:id/informations/:infoId",
+    {
+      config: RATE_LIMITS.analysis,
+      schema: { params: IdInfoParamsSchema, body: UpdateExtractedInfoInputSchema },
+    },
+    async (request) => {
+      const db = forUser(requireUser(request).id);
+      await casesService.correctInformation(
+        db,
+        request.params.id,
+        request.params.infoId,
+        request.body,
+      );
+      return { ok: true };
+    },
+  );
+
+  // Correction de l'échéance principale (US-4.4 AC5) : 400
+  // `deadline_before_document` si la date précède la date du courrier, 404
+  // sinon comme les autres.
+  app.patch(
+    "/api/dossiers/:id/echeance",
+    {
+      config: RATE_LIMITS.analysis,
+      schema: { params: IdParamsSchema, body: UpdateMainDeadlineInputSchema },
+    },
+    async (request) => {
+      const db = forUser(requireUser(request).id);
+      await casesService.correctMainDeadline(db, request.params.id, request.body);
+      return { ok: true };
+    },
+  );
+
+  // Correction organisme / type de courrier / date du courrier (US-4.4 AC1) :
+  // au moins une clé (schéma), champs touchés verrouillés contre la ré-analyse.
+  app.patch(
+    "/api/dossiers/:id",
+    {
+      config: RATE_LIMITS.analysis,
+      schema: { params: IdParamsSchema, body: UpdateCaseScalarsInputSchema },
+    },
+    async (request) => {
+      const db = forUser(requireUser(request).id);
+      await casesService.updateCaseScalars(db, request.params.id, request.body);
+      return { ok: true };
     },
   );
 };

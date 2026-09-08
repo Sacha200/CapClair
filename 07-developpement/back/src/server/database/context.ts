@@ -13,6 +13,7 @@ import { prisma as defaultPrisma } from "./client.js";
 import type { PrismaClient } from "./client.js";
 import {
   ActionItemRepository,
+  AuditEventRepository,
   CaseFileRepository,
   ConsentLogRepository,
   DocumentRepository,
@@ -32,6 +33,7 @@ export interface UserScopedDb {
   readonly requiredDocs: RequiredDocumentRepository;
   readonly responseDrafts: ResponseDraftRepository;
   readonly reminders: ReminderRepository;
+  readonly auditEvents: AuditEventRepository;
 }
 
 export function forUser(userId: string, client: PrismaClient = defaultPrisma): UserScopedDb {
@@ -45,5 +47,6 @@ export function forUser(userId: string, client: PrismaClient = defaultPrisma): U
     requiredDocs: new RequiredDocumentRepository(client, userId),
     responseDrafts: new ResponseDraftRepository(client, userId),
     reminders: new ReminderRepository(client, userId),
+    auditEvents: new AuditEventRepository(client, userId),
   };
 }

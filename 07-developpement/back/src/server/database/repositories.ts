@@ -13,6 +13,7 @@ import type {
   AnalysisStatus,
   ConsentType,
   Organisme,
+  Prisma,
   PrismaClient,
 } from "../../generated/prisma/client.js";
 import { NotFoundError } from "../../lib/errors.js";
@@ -107,6 +108,58 @@ export class CaseFileRepository {
       data: { analysisStatus: "EN_ATTENTE" },
     });
     return { queued: true };
+  }
+
+  /**
+   * US-4.4 AC1 — corrige un ou plusieurs champs scalaires (organisme, type de
+   * courrier, date du courrier). Chaque champ touché est ajouté à
+   * `userLockedFields` : une ré-analyse ne le réécrira plus (AC3). 404 si
+   * absent/autre compte. Renvoie la liste des champs effectivement modifiés
+   * (pour la trace `AuditEvent`).
+   */
+  async updateScalarsForUser(
+    id: string,
+    data: { organisme?: Organisme; title?: string; documentDate?: Date | null },
+  ): Promise<{ touched: string[] }> {
+    const caseFile = await this.findByIdForUser(id); // 404 si absent/autre compte
+    const touched: string[] = [];
+    if (data.organisme !== undefined) touched.push("organisme");
+    if (data.title !== undefined) touched.push("title");
+    if (data.documentDate !== undefined) touched.push("documentDate");
+    await this.prisma.caseFile.updateMany({
+      where: { id, userId: this.userId, deletedAt: null },
+      data: {
+        ...(data.organisme !== undefined ? { organisme: data.organisme } : {}),
+        ...(data.title !== undefined ? { title: data.title } : {}),
+        ...(data.documentDate !== undefined ? { documentDate: data.documentDate } : {}),
+        userLockedFields: [...new Set([...caseFile.userLockedFields, ...touched])],
+        lastActivityAt: new Date(),
+      },
+    });
+    return { touched };
+  }
+
+  /**
+   * US-4.4 AC5 — remplace l'échéance principale par une date corrigée à la
+   * main. Confiance forcée à `ELEVE` (l'utilisateur a tranché), extrait source
+   * remplacé, type passé à `EXPLICITE` (une date saisie n'est plus un délai
+   * calculé — D7), et `"mainDeadline"` verrouillé contre la ré-analyse. La
+   * validation de cohérence (≥ date du courrier) est faite en amont, dans le
+   * service. 404 si absent/autre compte.
+   */
+  async setCorrectedDeadlineForUser(id: string, date: Date): Promise<void> {
+    const caseFile = await this.findByIdForUser(id); // 404 si absent/autre compte
+    await this.prisma.caseFile.updateMany({
+      where: { id, userId: this.userId, deletedAt: null },
+      data: {
+        mainDeadline: date,
+        mainDeadlineType: "EXPLICITE",
+        mainDeadlineConfidence: "ELEVE",
+        mainDeadlineSourceExcerpt: "Corrigée par vous",
+        userLockedFields: [...new Set([...caseFile.userLockedFields, "mainDeadline"])],
+        lastActivityAt: new Date(),
+      },
+    });
   }
 }
 
@@ -258,6 +311,30 @@ export class ExtractedInformationRepository extends LinkedRepository {
     if (!row) throw new NotFoundError("extractedInformation");
     return row;
   }
+
+  /**
+   * US-4.4 — corrige la valeur (et éventuellement le libellé) d'une information
+   * extraite, et pose `isUserCorrected = true` : la ligne est désormais
+   * protégée contre l'écrasement par une ré-analyse (`applyAnalysis`). 404 si
+   * l'info n'est pas dans CE dossier de CE compte. Renvoie la ligne d'origine
+   * (catégorie incluse) pour la trace `AuditEvent`.
+   */
+  async updateForUser(caseFileId: string, infoId: string, data: { value: string; label?: string }) {
+    const row = await this.prisma.extractedInformation.findFirst({
+      where: { id: infoId, caseFileId, caseFile: this.caseFileScope },
+      include: { category: true },
+    });
+    if (!row) throw new NotFoundError("extractedInformation");
+    await this.prisma.extractedInformation.update({
+      where: { id: infoId },
+      data: {
+        value: data.value,
+        ...(data.label !== undefined ? { label: data.label } : {}),
+        isUserCorrected: true,
+      },
+    });
+    return row;
+  }
 }
 
 export class ActionItemRepository extends LinkedRepository {
@@ -297,5 +374,38 @@ export class ReminderRepository extends LinkedRepository {
     });
     if (!row) throw new NotFoundError("reminder");
     return row;
+  }
+}
+
+/**
+ * Journal d'audit scopé `userId` (US-4.4 AC4). Les évènements d'analyse écrits
+ * par le worker passent par `server/database/analysis-store.ts` (couche
+ * système, sans utilisateur courant) ; ceux issus d'une action utilisateur
+ * passent ici, via `context.forUser(...)`.
+ */
+export class AuditEventRepository extends LinkedRepository {
+  /**
+   * `metadata` ne porte JAMAIS de contenu de courrier : identifiants, codes de
+   * catégorie et noms de champs uniquement (US-8.2). 404 si le dossier
+   * n'appartient pas au compte.
+   */
+  async record(input: {
+    caseFileId: string;
+    eventType: string;
+    metadata?: Record<string, unknown>;
+  }): Promise<void> {
+    const caseFile = await this.prisma.caseFile.findFirst({
+      where: { id: input.caseFileId, ...this.caseFileScope },
+      select: { id: true },
+    });
+    if (!caseFile) throw new NotFoundError("caseFile");
+    await this.prisma.auditEvent.create({
+      data: {
+        userId: this.userId,
+        caseFileId: input.caseFileId,
+        eventType: input.eventType,
+        metadata: (input.metadata ?? {}) as Prisma.InputJsonValue,
+      },
+    });
   }
 }

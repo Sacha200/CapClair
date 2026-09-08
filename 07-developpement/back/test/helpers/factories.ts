@@ -45,6 +45,8 @@ export interface SeedCaseGraphOptions {
   /** Texte du courrier (base de la vérification d'extrait US-4.2). */
   extractedText?: string | null;
   summary?: string;
+  /** Date du courrier — ancre de la règle de cohérence US-3.6 AC5. */
+  documentDate?: Date;
   /** Remplace l'unique `ExtractedInformation` par défaut. */
   infos?: SeedInfo[];
 }
@@ -81,6 +83,7 @@ export async function seedCaseGraph(
       summary: options.summary ?? "…",
       ...(options.analysisStatus ? { analysisStatus: options.analysisStatus } : {}),
       ...(options.userLockedFields ? { userLockedFields: options.userLockedFields } : {}),
+      ...(options.documentDate ? { documentDate: options.documentDate } : {}),
     },
   });
 
