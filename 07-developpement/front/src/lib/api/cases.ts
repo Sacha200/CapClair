@@ -7,6 +7,9 @@ import {
   type CaseFileResultResponse,
   type CaseFileStatusResponse,
   type StartAnalysisResponse,
+  type UpdateCaseScalarsInput,
+  type UpdateExtractedInfoInput,
+  type UpdateMainDeadlineInput,
 } from "@capclair/contract";
 import { apiRequest } from "./client";
 
@@ -43,4 +46,35 @@ export function confirmAiConsent(id: string): Promise<{ ok: true }> {
 /** Déclenche l'analyse asynchrone (202 `EN_ATTENTE`). 403 sans consentement. */
 export function startAnalysis(id: string): Promise<StartAnalysisResponse> {
   return apiRequest(CASE_FILE_PATHS.analyze(id), { method: "POST" });
+}
+
+/**
+ * US-4.4 — corrige une information extraite. Le serveur pose `isUserCorrected`
+ * et journalise ; `404` si l'info n'est pas dans ce dossier de ce compte.
+ */
+export function updateExtractedInfo(
+  id: string,
+  infoId: string,
+  body: UpdateExtractedInfoInput,
+): Promise<{ ok: true }> {
+  return apiRequest(CASE_FILE_PATHS.updateInfo(id, infoId), { method: "PATCH", body });
+}
+
+/**
+ * US-4.4 AC5 — corrige l'échéance principale (date `YYYY-MM-DD`). `400`
+ * `deadline_before_document` si la date précède la date du courrier.
+ */
+export function updateMainDeadline(
+  id: string,
+  body: UpdateMainDeadlineInput,
+): Promise<{ ok: true }> {
+  return apiRequest(CASE_FILE_PATHS.deadline(id), { method: "PATCH", body });
+}
+
+/** US-4.4 AC1 — corrige organisme / type de courrier / date du courrier. */
+export function updateCaseScalars(
+  id: string,
+  body: UpdateCaseScalarsInput,
+): Promise<{ ok: true }> {
+  return apiRequest(CASE_FILE_PATHS.detail(id), { method: "PATCH", body });
 }

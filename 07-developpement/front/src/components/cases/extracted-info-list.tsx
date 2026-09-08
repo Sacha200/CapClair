@@ -3,7 +3,13 @@ import { ResultCard } from "./result-card";
 import { ExtractedInfoRow } from "./extracted-info-row";
 
 /** US-4.1 (informations extraites) — compteur + lignes. */
-export function ExtractedInfoList({ infos }: { infos: ResultInfo[] }) {
+export function ExtractedInfoList({
+  infos,
+  caseFileId,
+}: {
+  infos: ResultInfo[];
+  caseFileId?: string;
+}) {
   return (
     <ResultCard title="Informations extraites" titleId="infos-title">
       {infos.length === 0 ? (
@@ -13,7 +19,7 @@ export function ExtractedInfoList({ infos }: { infos: ResultInfo[] }) {
       ) : (
         <ul className="space-y-3">
           {infos.map((info) => (
-            <ExtractedInfoRow key={info.id} info={info} />
+            <ExtractedInfoRow key={info.id} info={info} caseFileId={caseFileId} />
           ))}
         </ul>
       )}

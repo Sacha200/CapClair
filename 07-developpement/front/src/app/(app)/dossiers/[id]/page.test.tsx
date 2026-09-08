@@ -10,7 +10,12 @@ const notFound = vi.fn(() => {
 
 vi.mock("@/lib/api/cases", () => ({ getCaseResult: (...a: unknown[]) => getCaseResult(...a) }));
 vi.mock("@/lib/session", () => ({ readCookieHeader: () => Promise.resolve("capclair_session=x") }));
-vi.mock("next/navigation", () => ({ notFound: () => notFound() }));
+// `useRouter` : requis depuis la PR-C — l'écran 05 rend des formulaires de
+// correction (client components) qui l'appellent au rendu.
+vi.mock("next/navigation", () => ({
+  notFound: () => notFound(),
+  useRouter: () => ({ refresh: vi.fn() }),
+}));
 // L'écran d'attente est un client component avec polling — on le neutralise.
 vi.mock("@/components/cases/analysis-waiting", () => ({
   AnalysisWaiting: () => <div data-testid="waiting" />,

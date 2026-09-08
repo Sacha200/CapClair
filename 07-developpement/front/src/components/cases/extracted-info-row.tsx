@@ -1,5 +1,6 @@
 import type { ResultInfo } from "@capclair/contract";
 import { ConfidenceBadge } from "./confidence-badge";
+import { InfoEditForm } from "./info-edit-form";
 import { SourceExcerptDisclosure } from "./source-excerpt-disclosure";
 
 /**
@@ -7,11 +8,20 @@ import { SourceExcerptDisclosure } from "./source-excerpt-disclosure";
  * confiance (US-4.3) et extrait source (US-4.2). `id="info-<id>"` sert d'ancre
  * au bandeau récapitulatif (`ConfidenceRecapBanner`).
  *
- * Le bouton « Corriger cette information » est ajouté en PR-C (US-4.4).
+ * `caseFileId` fourni ⇒ formulaire de correction en ligne (US-4.4).
  */
-export function ExtractedInfoRow({ info }: { info: ResultInfo }) {
+export function ExtractedInfoRow({
+  info,
+  caseFileId,
+}: {
+  info: ResultInfo;
+  caseFileId?: string;
+}) {
   return (
-    <li id={`info-${info.id}`} className="scroll-mt-24 border-t border-border pt-3 first:border-t-0 first:pt-0">
+    <li
+      id={`info-${info.id}`}
+      className="scroll-mt-24 border-t border-border pt-3 first:border-t-0 first:pt-0"
+    >
       <p className="text-xs text-text-muted">{info.label || info.categoryLabel}</p>
       <div className="mt-1 flex flex-wrap items-center gap-2">
         <span className="text-sm font-medium text-text-strong">{info.value}</span>
@@ -22,6 +32,7 @@ export function ExtractedInfoRow({ info }: { info: ResultInfo }) {
         )}
       </div>
       <SourceExcerptDisclosure excerpt={info.sourceExcerpt} verifiable={info.verifiable} />
+      {caseFileId ? <InfoEditForm caseFileId={caseFileId} info={info} /> : null}
     </li>
   );
 }
