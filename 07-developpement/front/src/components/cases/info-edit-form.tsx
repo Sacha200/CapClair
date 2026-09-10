@@ -55,19 +55,22 @@ export function InfoEditForm({ caseFileId, info }: { caseFileId: string; info: R
 
   if (!open) {
     return (
-      <button
-        type="button"
-        onClick={openForm}
-        className="mt-1 text-xs font-semibold text-primary hover:underline"
-      >
-        Corriger cette information
-      </button>
+      <div className="mt-1.5 text-right">
+        <button
+          type="button"
+          onClick={openForm}
+          aria-label="Corriger cette information"
+          className="text-xs font-semibold text-primary hover:underline"
+        >
+          Corriger
+        </button>
+      </div>
     );
   }
 
   return (
     <form
-      className="mt-2 flex flex-col gap-2"
+      className="mt-3 flex flex-col gap-2"
       onSubmit={(event) => {
         event.preventDefault();
         void save();

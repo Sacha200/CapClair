@@ -13,7 +13,7 @@ export function ResponseDraftPreview({ draft }: { draft: ResultDraft | null }) {
     <ResultCard title="Brouillon de réponse" titleId="draft-title">
       {hasContent ? (
         <>
-          <p className="line-clamp-3 font-[family-name:var(--font-reading)] text-sm text-text">
+          <p className="line-clamp-3 font-[family-name:var(--font-reading)] text-[15px] leading-6 text-text">
             {draft!.preview}
           </p>
           <button

@@ -38,7 +38,7 @@ export function AppHeader({ user }: { user: SessionUser }) {
 
   return (
     <header className="border-b border-border bg-bg-surface">
-      <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3 sm:px-10">
+      <div className="mx-auto flex max-w-[1440px] items-center justify-between px-4 py-3 sm:px-12">
         <div className="flex items-center gap-9">
           <Link href="/dashboard" className="flex items-center gap-2">
             <span className="flex size-6 items-center justify-center rounded-[6px] bg-primary text-sm font-extrabold text-text-on-primary">

@@ -24,7 +24,12 @@ export function MainDeadlineCard({
   const formatted = formatFrenchDate(deadline?.date);
 
   return (
-    <ResultCard title="Échéance principale" titleId="deadline-title" tone="highlight">
+    <ResultCard
+      title="Échéance principale"
+      titleId="deadline-title"
+      titleVariant="overline"
+      tone="highlight"
+    >
       {!deadline || !formatted ? (
         <div className="flex flex-col gap-2">
           <p className="text-sm text-text">
@@ -41,7 +46,7 @@ export function MainDeadlineCard({
       ) : (
         <div className="flex flex-col gap-2">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-2xl font-bold text-text-strong">{formatted}</span>
+            <span className="text-[22px] font-bold text-text-strong">{formatted}</span>
             {deadline.isUserCorrected ? (
               <span className="text-xs font-medium text-text-muted">Corrigée par vous</span>
             ) : (
@@ -54,7 +59,7 @@ export function MainDeadlineCard({
           ) : null}
 
           {deadline.computedFromDelay && deadline.sourceExcerpt ? (
-            <p className="text-sm text-text-muted">
+            <p className="font-[family-name:var(--font-reading)] text-sm text-text-muted">
               Calculée par le serveur à partir de «&nbsp;{deadline.sourceExcerpt}&nbsp;».
             </p>
           ) : null}

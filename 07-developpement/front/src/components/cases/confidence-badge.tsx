@@ -18,7 +18,7 @@ export function ConfidenceBadge({
   if (!label) return null;
 
   return (
-    <span className="inline-flex items-center gap-1 rounded-[var(--radius-chip)] border border-warning bg-warning-light px-2 py-0.5 text-xs font-semibold text-warning">
+    <span className="inline-flex items-center gap-1 rounded-[var(--radius-button)] border-[1.5px] border-warning bg-warning-light py-1.5 pl-2.5 pr-3 text-[13px] font-bold text-warning">
       <RiAlertLine size={14} className="shrink-0" aria-hidden />
       {label}
     </span>
