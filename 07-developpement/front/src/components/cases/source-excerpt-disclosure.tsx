@@ -11,12 +11,22 @@ import { RiAlertLine } from "@remixicon/react";
 export function SourceExcerptDisclosure({
   excerpt,
   verifiable,
+  inline = false,
 }: {
   excerpt: string;
   verifiable: boolean;
+  /** Placé dans une ligne flex (puce « Informations extraites », node 28:149) :
+   *  déclencheur aligné à droite fermé, contenu pleine largeur une fois ouvert. */
+  inline?: boolean;
 }) {
   return (
-    <details className="group mt-1.5 text-sm">
+    <details
+      className={
+        inline
+          ? "group shrink-0 text-sm open:mt-1.5 open:basis-full"
+          : "group mt-1.5 text-sm"
+      }
+    >
       <summary className="inline-flex min-h-11 cursor-pointer list-none items-center text-xs font-semibold text-primary hover:underline [&::-webkit-details-marker]:hidden">
         Voir l&apos;extrait source
       </summary>

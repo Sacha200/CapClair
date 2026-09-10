@@ -52,12 +52,12 @@ export function AnalysisResult({
         </div>
         {/* Statut du dossier : « À faire » à l'issue de l'analyse. La gestion
             du cycle de vie du statut est l'epic E5 (US-5.x). */}
-        <span className="inline-flex items-center gap-1.5 rounded-[var(--radius-pill)] bg-bg-subtle px-2.5 py-1 text-xs font-semibold text-text-strong">
-          <span className="size-1.5 rounded-full bg-warning" aria-hidden />À faire
+        <span className="inline-flex items-center gap-1.5 rounded-[var(--radius-pill)] bg-bg-subtle py-[5px] pl-2.5 pr-3 text-xs font-semibold text-text-strong">
+          <span className="size-2 rounded-full bg-warning" aria-hidden />À faire
         </span>
       </header>
 
-      <div className="mt-6 lg:grid lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start lg:gap-6">
+      <div className="mt-5 lg:grid lg:grid-cols-[minmax(0,1fr)_460px] lg:items-start lg:gap-5">
         <div className="space-y-4">
           <MainDeadlineCard
             deadline={data.mainDeadline}

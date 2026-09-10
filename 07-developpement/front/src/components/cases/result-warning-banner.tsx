@@ -10,9 +10,9 @@ export function ResultWarningBanner() {
   return (
     <div
       role="note"
-      className="flex items-start gap-2 rounded-[var(--radius-chip)] border border-warning bg-warning-light px-3 py-2.5 text-sm text-text-strong"
+      className="flex items-start gap-2 rounded-[var(--radius-chip)] border border-border bg-bg-subtle px-3 py-2.5 text-sm text-text-muted"
     >
-      <RiInformationLine size={18} className="mt-0.5 shrink-0 text-warning" aria-hidden />
+      <RiInformationLine size={18} className="mt-0.5 shrink-0 text-text-muted" aria-hidden />
       <span>{RESULT_WARNING_BANNER}</span>
     </div>
   );
