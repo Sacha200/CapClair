@@ -43,10 +43,22 @@ describe("CaseHistory (US-4.5)", () => {
   });
 
   it("historique indisponible (fetch non résolu) → ne rend rien", async () => {
-    getCaseHistory.mockReturnValue(new Promise(() => {})); // jamais résolue
+    // Promesse contrôlée plutôt que `new Promise(() => {})` : une promesse
+    // jamais réglée laisse un handle ouvert (React/jsdom) qui empêche le
+    // process vitest de se terminer une fois tous les tests passés (hang en
+    // CI, cf. écran 05 / E4 — vu sur run GitHub Actions le 2026-09-10).
+    let resolvePending!: (value: { entries: [] }) => void;
+    getCaseHistory.mockReturnValue(
+      new Promise<{ entries: [] }>((resolve) => {
+        resolvePending = resolve;
+      }),
+    );
     const { container } = render(<CaseHistory caseFileId="c1" />);
     await flush();
     expect(getCaseHistory).toHaveBeenCalledWith("c1");
     expect(container).toBeEmptyDOMElement();
+    // Règle la promesse pour ne rien laisser en suspens à la fin du test.
+    resolvePending({ entries: [] });
+    await flush();
   });
 });
