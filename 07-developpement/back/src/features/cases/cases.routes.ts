@@ -13,6 +13,7 @@
  * - `POST  /api/dossiers/:id/actions`               ajoute une action manuelle (US-5.2 AC2)
  * - `PATCH /api/dossiers/:id/actions/:actionId`     coche/décoche une action (US-5.2 AC1)
  * - `DELETE /api/dossiers/:id/actions/:actionId`    supprime définitivement une action (US-5.2 AC3)
+ * - `PATCH /api/dossiers/:id/justificatifs/:docId`  coche « fourni » / note libre (US-5.3 AC1/AC2)
  *
  * Les routes de *déclenchement* et d'*écriture* (POST, PATCH) portent
  * `config: RATE_LIMITS.analysis` (US-8.1 #48) ; les *lectures* d'écran
@@ -34,11 +35,13 @@ import {
   UpdateCaseStatusInputSchema,
   UpdateExtractedInfoInputSchema,
   UpdateMainDeadlineInputSchema,
+  UpdateRequiredDocInputSchema,
 } from "./cases.dto.js";
 
 const IdParamsSchema = z.object({ id: z.string().uuid() });
 const IdInfoParamsSchema = z.object({ id: z.string().uuid(), infoId: z.string().uuid() });
 const IdActionParamsSchema = z.object({ id: z.string().uuid(), actionId: z.string().uuid() });
+const IdDocParamsSchema = z.object({ id: z.string().uuid(), docId: z.string().uuid() });
 
 export const caseRoutes: FastifyPluginAsync = async (fastify) => {
   const app = fastify.withTypeProvider<ZodTypeProvider>();
@@ -209,6 +212,27 @@ export const caseRoutes: FastifyPluginAsync = async (fastify) => {
     async (request) => {
       const db = forUser(requireUser(request).id);
       await casesService.deleteAction(db, request.params.id, request.params.actionId);
+      return { ok: true };
+    },
+  );
+
+  // Checklist des justificatifs (US-5.3 AC1/AC2) : coche « fourni » et/ou pose
+  // une note libre. 404 si `docId` hors du dossier/compte, 400 si le corps ne
+  // porte aucune des deux clés (schéma) ou dépasse 500 caractères.
+  app.patch(
+    "/api/dossiers/:id/justificatifs/:docId",
+    {
+      config: RATE_LIMITS.analysis,
+      schema: { params: IdDocParamsSchema, body: UpdateRequiredDocInputSchema },
+    },
+    async (request) => {
+      const db = forUser(requireUser(request).id);
+      await casesService.updateRequiredDocument(
+        db,
+        request.params.id,
+        request.params.docId,
+        request.body,
+      );
       return { ok: true };
     },
   );

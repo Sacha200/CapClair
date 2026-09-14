@@ -17,6 +17,7 @@ import type {
   Organisme,
   Prisma,
   PrismaClient,
+  RequiredDocument,
 } from "../../generated/prisma/client.js";
 import { NotFoundError } from "../../lib/errors.js";
 
@@ -435,6 +436,29 @@ export class RequiredDocumentRepository extends LinkedRepository {
     });
     if (!row) throw new NotFoundError("requiredDocument");
     return row;
+  }
+
+  /**
+   * US-5.3 AC1/AC2 — coche « fourni » et/ou pose une note libre sur un
+   * justificatif. Au moins une des deux clés (garanti par le schéma). 404 si
+   * `docId` n'est pas dans ce dossier de ce compte.
+   */
+  async updateForUser(
+    caseFileId: string,
+    docId: string,
+    data: { provided?: boolean; userNote?: string | null },
+  ): Promise<RequiredDocument> {
+    const row = await this.prisma.requiredDocument.findFirst({
+      where: { id: docId, caseFileId, caseFile: this.caseFileScope },
+    });
+    if (!row) throw new NotFoundError("requiredDocument");
+    return this.prisma.requiredDocument.update({
+      where: { id: docId },
+      data: {
+        ...(data.provided !== undefined ? { provided: data.provided } : {}),
+        ...(data.userNote !== undefined ? { userNote: data.userNote } : {}),
+      },
+    });
   }
 }
 

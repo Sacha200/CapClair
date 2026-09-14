@@ -14,6 +14,7 @@ export {
   UpdateExtractedInfoInputSchema,
   UpdateMainDeadlineInputSchema,
   UpdateCaseScalarsInputSchema,
+  UpdateRequiredDocInputSchema,
   RESULT_WARNING_BANNER,
   LOCKABLE_FIELDS,
   ANALYSIS_MESSAGES,
@@ -34,5 +35,6 @@ export type {
   UpdateExtractedInfoInput,
   UpdateMainDeadlineInput,
   UpdateCaseScalarsInput,
+  UpdateRequiredDocInput,
   LockableField,
 } from "@capclair/contract";

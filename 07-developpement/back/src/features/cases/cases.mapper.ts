@@ -146,6 +146,7 @@ export function toCaseResultDto(
     id: doc.id,
     name: doc.name,
     provided: doc.provided,
+    userNote: doc.userNote,
     sourceExcerpt: doc.sourceExcerpt,
     verifiable: isLiteralExcerpt(doc.sourceExcerpt, extractedText),
   }));

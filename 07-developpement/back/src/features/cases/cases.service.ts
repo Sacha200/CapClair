@@ -24,6 +24,7 @@ import {
   type UpdateCaseStatusInput,
   type UpdateExtractedInfoInput,
   type UpdateMainDeadlineInput,
+  type UpdateRequiredDocInput,
 } from "./cases.dto.js";
 
 /** "YYYY-MM-DD" → `Date` à minuit UTC (dates de calendrier, pas d'heure locale). */
@@ -261,6 +262,21 @@ export async function deleteAction(
 ): Promise<void> {
   await db.actionItems.deleteForUser(caseFileId, actionId);
   await db.auditEvents.record({ caseFileId, eventType: "action.deleted", metadata: { actionId } });
+}
+
+/**
+ * US-5.3 AC1/AC2 — coche « fourni » et/ou pose une note libre sur un
+ * justificatif. Pas d'`AuditEvent` : aucune AC US-5.3 ne demande de
+ * journalisation pour la checklist. 404 si `docId` n'est pas dans ce dossier
+ * de ce compte.
+ */
+export async function updateRequiredDocument(
+  db: UserScopedDb,
+  caseFileId: string,
+  docId: string,
+  input: UpdateRequiredDocInput,
+): Promise<void> {
+  await db.requiredDocs.updateForUser(caseFileId, docId, input);
 }
 
 /**
