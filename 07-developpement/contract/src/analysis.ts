@@ -215,10 +215,22 @@ export const ResultRequiredDocSchema = z.object({
   id: z.string().uuid(),
   name: z.string(),
   provided: z.boolean(),
+  userNote: z.string().nullable(),
   sourceExcerpt: z.string(),
   verifiable: z.boolean(),
 });
 export type ResultRequiredDoc = z.infer<typeof ResultRequiredDocSchema>;
+
+/** E5 US-5.3 — coche « fourni » et/ou note libre sur un justificatif. Au moins une clé. */
+export const UpdateRequiredDocInputSchema = z
+  .object({
+    provided: z.boolean().optional(),
+    userNote: z.string().trim().max(500).nullable().optional(),
+  })
+  .refine((v) => v.provided !== undefined || v.userNote !== undefined, {
+    message: ANALYSIS_MESSAGES.nothingToUpdate,
+  });
+export type UpdateRequiredDocInput = z.infer<typeof UpdateRequiredDocInputSchema>;
 
 export const ResultDeadlineSchema = z.object({
   date: z.string().datetime().nullable(),

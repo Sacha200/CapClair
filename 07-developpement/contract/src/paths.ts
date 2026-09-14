@@ -35,4 +35,6 @@ export const CASE_FILE_PATHS = {
   // E5 US-5.2 — actions du dossier : cocher, ajouter, supprimer.
   actions: (id: string) => `/api/dossiers/${id}/actions`,
   action: (id: string, actionId: string) => `/api/dossiers/${id}/actions/${actionId}`,
+  // E5 US-5.3 — checklist des justificatifs : fourni / note libre.
+  requiredDoc: (id: string, docId: string) => `/api/dossiers/${id}/justificatifs/${docId}`,
 } as const;
