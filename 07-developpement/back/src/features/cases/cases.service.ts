@@ -19,6 +19,7 @@ import {
   type CaseFileHistoryResponse,
   type CaseFileResultResponse,
   type UpdateCaseScalarsInput,
+  type UpdateCaseStatusInput,
   type UpdateExtractedInfoInput,
   type UpdateMainDeadlineInput,
 } from "./cases.dto.js";
@@ -188,6 +189,27 @@ export async function updateCaseScalars(
     eventType: "case.updated",
     metadata: { fields: touched },
   });
+}
+
+/**
+ * US-5.1 AC2 — change le statut de pilotage du dossier. Le champ est ajouté à
+ * `userLockedFields` (via le repository) : une ré-analyse ne le réécrase plus.
+ * Statut identique au statut courant → aucun `AuditEvent` (pas de bruit
+ * journal). 404 si absent/autre compte.
+ */
+export async function updateCaseStatus(
+  db: UserScopedDb,
+  caseFileId: string,
+  input: UpdateCaseStatusInput,
+): Promise<void> {
+  const { from } = await db.caseFiles.updateStatusForUser(caseFileId, input.status);
+  if (from !== input.status) {
+    await db.auditEvents.record({
+      caseFileId,
+      eventType: "case.status_changed",
+      metadata: { from, to: input.status },
+    });
+  }
 }
 
 /**

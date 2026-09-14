@@ -9,6 +9,7 @@
  * - `PATCH /api/dossiers/:id/informations/:infoId`  corrige une info extraite (US-4.4)
  * - `PATCH /api/dossiers/:id/echeance`              corrige l'échéance principale (US-4.4 AC5)
  * - `PATCH /api/dossiers/:id`                       corrige organisme/type/date (US-4.4 AC1)
+ * - `PATCH /api/dossiers/:id/statut`                change le statut de pilotage (US-5.1 AC2)
  *
  * Les routes de *déclenchement* et d'*écriture* (POST, PATCH) portent
  * `config: RATE_LIMITS.analysis` (US-8.1 #48) ; les *lectures* d'écran
@@ -25,6 +26,7 @@ import { toCaseStatusDto } from "./cases.mapper.js";
 import {
   ConfirmAiConsentInputSchema,
   UpdateCaseScalarsInputSchema,
+  UpdateCaseStatusInputSchema,
   UpdateExtractedInfoInputSchema,
   UpdateMainDeadlineInputSchema,
 } from "./cases.dto.js";
@@ -149,6 +151,21 @@ export const caseRoutes: FastifyPluginAsync = async (fastify) => {
     async (request) => {
       const db = forUser(requireUser(request).id);
       await casesService.updateCaseScalars(db, request.params.id, request.body);
+      return { ok: true };
+    },
+  );
+
+  // Changement de statut de pilotage (US-5.1 AC2) : verrouille "status" contre
+  // la ré-analyse (`LOCKABLE_FIELDS`), journalise sauf si statut identique.
+  app.patch(
+    "/api/dossiers/:id/statut",
+    {
+      config: RATE_LIMITS.analysis,
+      schema: { params: IdParamsSchema, body: UpdateCaseStatusInputSchema },
+    },
+    async (request) => {
+      const db = forUser(requireUser(request).id);
+      await casesService.updateCaseStatus(db, request.params.id, request.body);
       return { ok: true };
     },
   );

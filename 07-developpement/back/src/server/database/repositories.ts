@@ -11,6 +11,7 @@
  */
 import type {
   AnalysisStatus,
+  CaseStatus,
   ConsentType,
   Organisme,
   Prisma,
@@ -160,6 +161,20 @@ export class CaseFileRepository {
         lastActivityAt: new Date(),
       },
     });
+  }
+
+  /** US-5.1 AC2 — change le statut ; renvoie l'ancien pour la trace AuditEvent. 404 si absent/autre compte. */
+  async updateStatusForUser(id: string, status: CaseStatus): Promise<{ from: CaseStatus }> {
+    const caseFile = await this.findByIdForUser(id); // 404 si absent/autre compte
+    await this.prisma.caseFile.updateMany({
+      where: { id, userId: this.userId, deletedAt: null },
+      data: {
+        status,
+        userLockedFields: [...new Set([...caseFile.userLockedFields, "status"])],
+        lastActivityAt: new Date(),
+      },
+    });
+    return { from: caseFile.status };
   }
 }
 
