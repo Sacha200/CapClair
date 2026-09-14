@@ -39,14 +39,22 @@ function validResult(overrides: Partial<AnalysisResult> = {}): AnalysisResult {
   return {
     organisme: "CPAM",
     typeCourrier: "Notification de l'Assurance Maladie",
-    dateCourrierRawText: null,
+    // Diverge volontairement de la date verrouillée (15 janvier 2026) pour
+    // prouver que `documentDate` n'est pas réécrit tant qu'il est verrouillé.
+    dateCourrierRawText: "3 juillet 2026",
     informationsExtraites: [],
     resume: SUMMARY,
     actions: [
       { title: "Action IA (nouvelle)", sourceExcerpt: EXCERPT, dueDateRawText: null },
     ],
     justificatifs: [{ name: "Justificatif IA (nouveau)", sourceExcerpt: EXCERPT }],
-    echeancePrincipale: null,
+    // Diverge volontairement de l'échéance verrouillée (EXPLICITE/ELEVE) pour
+    // prouver que `mainDeadline*` n'est pas réécrit tant qu'il est verrouillé.
+    echeancePrincipale: {
+      type: "RELATIVE",
+      rawText: "un mois à compter de la réception",
+      sourceExcerpt: EXCERPT,
+    },
     brouillonReponse: "Madame, Monsieur, veuillez trouver ci-joint le justificatif demandé.",
     avertissements: [],
     ...overrides,
@@ -60,16 +68,24 @@ beforeEach(async () => {
 afterAll(() => disconnectTestPrisma());
 
 describe("ré-analyse : ce qui est protégé (E4 US-4.4 AC3 + E5 US-5.2)", () => {
-  it("préserve les scalaires verrouillés, les actions/justificatifs traités par l'utilisateur ; remplace le reste", async () => {
+  it("préserve les 4 scalaires verrouillés (E4), les actions/justificatifs traités par l'utilisateur (E5) ; remplace le reste", async () => {
     analyzeLetterMock.mockResolvedValue({ result: validResult() });
 
     const { user } = await createUser(prisma);
+    const LOCKED_DOCUMENT_DATE = new Date("2026-01-15T00:00:00.000Z");
+    const LOCKED_MAIN_DEADLINE = new Date("2026-02-15T00:00:00.000Z");
     const caseFile = await prisma.caseFile.create({
       data: {
         userId: user.id,
         organisme: "FRANCE_TRAVAIL",
         title: "Titre corrigé à la main",
-        userLockedFields: ["organisme", "title"],
+        documentDate: LOCKED_DOCUMENT_DATE,
+        documentDateSourceExcerpt: "Corrigée par vous",
+        mainDeadline: LOCKED_MAIN_DEADLINE,
+        mainDeadlineType: "EXPLICITE",
+        mainDeadlineSourceExcerpt: "Corrigée par vous",
+        mainDeadlineConfidence: "ELEVE",
+        userLockedFields: ["organisme", "title", "documentDate", "mainDeadline"],
         documents: {
           create: {
             originalName: "courrier.pdf",
@@ -141,6 +157,11 @@ describe("ré-analyse : ce qui est protégé (E4 US-4.4 AC3 + E5 US-5.2)", () =>
     // Scalaires verrouillés (E4 AC3) : conservés malgré la réponse IA divergente.
     expect(after.organisme).toBe("FRANCE_TRAVAIL");
     expect(after.title).toBe("Titre corrigé à la main");
+    expect(after.documentDate?.toISOString()).toBe(LOCKED_DOCUMENT_DATE.toISOString());
+    expect(after.documentDateSourceExcerpt).toBe("Corrigée par vous");
+    expect(after.mainDeadline?.toISOString()).toBe(LOCKED_MAIN_DEADLINE.toISOString());
+    expect(after.mainDeadlineType).toBe("EXPLICITE");
+    expect(after.mainDeadlineConfidence).toBe("ELEVE");
     // Non verrouillable : rafraîchi.
     expect(after.summary).toBe(SUMMARY);
 
