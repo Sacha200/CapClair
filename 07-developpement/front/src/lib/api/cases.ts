@@ -5,6 +5,7 @@
 import {
   CASE_FILE_PATHS,
   type CaseFileHistoryResponse,
+  type CaseFileListResponse,
   type CaseFileResultResponse,
   type CaseFileStatusResponse,
   type CreateActionInput,
@@ -17,6 +18,15 @@ import {
   type UpdateRequiredDocInput,
 } from "@capclair/contract";
 import { apiRequest } from "./client";
+
+/**
+ * US-5.4 — liste des dossiers du compte + résumé du tableau de bord. Appelé
+ * par le server component de `/dashboard`, `cookieHeader` relaie le cookie de
+ * la requête entrante (gabarit `getCaseResult`).
+ */
+export function listCases(cookieHeader?: string): Promise<CaseFileListResponse> {
+  return apiRequest(CASE_FILE_PATHS.list(), { method: "GET", cookieHeader });
+}
 
 /** Statut d'analyse d'un dossier — support du polling de l'écran 04. */
 export function getCaseFile(id: string): Promise<CaseFileStatusResponse> {

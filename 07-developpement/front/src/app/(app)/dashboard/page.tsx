@@ -1,23 +1,31 @@
-import Link from "next/link";
-import { RiAddLine } from "@remixicon/react";
+import type { Metadata } from "next";
+import { listCases } from "@/lib/api/cases";
+import { readCookieHeader } from "@/lib/session";
+import { CaseFileList } from "@/components/dashboard/case-file-list";
+import { DashboardHeader } from "@/components/dashboard/dashboard-header";
+import { DashboardSummaryTiles } from "@/components/dashboard/dashboard-summary-tiles";
+import { EmptyDashboard } from "@/components/dashboard/empty-dashboard";
 
-export default function DashboardPage() {
+export const metadata: Metadata = { title: "Tableau de bord — CapClair" };
+
+/**
+ * Tableau de bord (US-5.4) : liste des dossiers du compte + résumé de
+ * pilotage. État vide (AC3) si le compte n'a encore aucun dossier — le bouton
+ * d'import reste visible dans les deux cas (AC2).
+ */
+export default async function DashboardPage() {
+  const cookieHeader = await readCookieHeader();
+  const { cases, summary } = await listCases(cookieHeader);
+
+  if (cases.length === 0) {
+    return <EmptyDashboard />;
+  }
+
   return (
     <section>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold text-text-strong">Mes dossiers</h1>
-        <Link
-          href="/importer"
-          className="inline-flex min-h-11 items-center gap-1.5 rounded-[var(--radius-button)] bg-primary px-4 text-sm font-semibold text-text-on-primary transition-colors hover:bg-primary-hover"
-        >
-          <RiAddLine size={18} aria-hidden />
-          Importer un courrier
-        </Link>
-      </div>
-      <p className="mt-4 text-sm text-text-muted">
-        Vous n&apos;avez pas encore de dossier. Importez un courrier pour commencer — la liste des
-        dossiers arrivera avec le tableau de bord (epic E5, US-5.4).
-      </p>
+      <DashboardHeader />
+      <DashboardSummaryTiles summary={summary} />
+      <CaseFileList cases={cases} />
     </section>
   );
 }
