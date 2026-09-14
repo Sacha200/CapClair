@@ -176,19 +176,40 @@ export const ResultInfoSchema = z.object({
 });
 export type ResultInfo = z.infer<typeof ResultInfoSchema>;
 
+/** E5 US-5.2 — origine d'une action : générée par l'analyse, ou ajoutée à la main. */
+export const ActionOriginSchema = z.enum(["ANALYSE", "MANUEL"]);
+export type ActionOrigin = z.infer<typeof ActionOriginSchema>;
+
 export const ResultActionSchema = z.object({
   id: z.string().uuid(),
   title: z.string(),
+  description: z.string().nullable(),
   done: z.boolean(),
   position: z.number().int(),
+  origin: ActionOriginSchema,
   dueDate: z.string().datetime().nullable(),
   dueDateType: EcheanceTypeIASchema.nullable(),
   dueDateConfidence: DisplayConfidenceSchema.nullable(),
   dueDateSourceExcerpt: z.string().nullable(),
-  sourceExcerpt: z.string(),
-  verifiable: z.boolean(),
+  /** `null` pour une action `MANUEL` — jamais `false`/`""` à la place. */
+  sourceExcerpt: z.string().nullable(),
+  /** `null` si `sourceExcerpt` est `null` (pas d'extrait à vérifier). */
+  verifiable: z.boolean().nullable(),
 });
 export type ResultAction = z.infer<typeof ResultActionSchema>;
+
+/** E5 US-5.2 AC2 — ajout manuel d'une action. */
+export const CreateActionInputSchema = z.object({
+  title: z.string().trim().min(1).max(120),
+  description: z.string().trim().max(2000).optional(),
+  /** "YYYY-MM-DD", date de calendrier saisie par l'utilisateur. */
+  dueDate: z.string().date().optional(),
+});
+export type CreateActionInput = z.infer<typeof CreateActionInputSchema>;
+
+/** E5 US-5.2 AC1 — cocher/décocher une action. */
+export const UpdateActionInputSchema = z.object({ done: z.boolean() });
+export type UpdateActionInput = z.infer<typeof UpdateActionInputSchema>;
 
 export const ResultRequiredDocSchema = z.object({
   id: z.string().uuid(),

@@ -32,4 +32,7 @@ export const CASE_FILE_PATHS = {
   history: (id: string) => `/api/dossiers/${id}/historique`,
   // E5 US-5.1 — changement manuel du statut de pilotage.
   status: (id: string) => `/api/dossiers/${id}/statut`,
+  // E5 US-5.2 — actions du dossier : cocher, ajouter, supprimer.
+  actions: (id: string) => `/api/dossiers/${id}/actions`,
+  action: (id: string, actionId: string) => `/api/dossiers/${id}/actions/${actionId}`,
 } as const;
