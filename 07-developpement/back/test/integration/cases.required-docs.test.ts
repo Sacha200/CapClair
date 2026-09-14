@@ -202,6 +202,13 @@ describe("justificatifs traités : survivent à une ré-analyse (US-5.3, protect
     const notedDoc = await prisma.requiredDocument.create({
       data: { caseFileId: caseFile.id, name: "Autre justificatif", sourceExcerpt: "…" },
     });
+    // Troisième justificatif, jamais traité (provided: false, userNote: null,
+    // valeurs par défaut) : celui-ci NE doit PAS survivre à la ré-analyse.
+    const untouchedDoc = await prisma.requiredDocument.create({
+      data: { caseFileId: caseFile.id, name: "Jamais traité", sourceExcerpt: "…" },
+    });
+    expect(untouchedDoc.provided).toBe(false);
+    expect(untouchedDoc.userNote).toBeNull();
 
     const app = await getApp();
 
@@ -245,6 +252,9 @@ describe("justificatifs traités : survivent à une ré-analyse (US-5.3, protect
 
     const survivedNoted = docs.find((d) => d.id === notedDoc.id);
     expect(survivedNoted).toMatchObject({ userNote: "Déjà envoyé par courrier" });
+
+    // Le justificatif jamais traité doit avoir disparu (remplacé, pas conservé).
+    expect(docs.find((d) => d.id === untouchedDoc.id)).toBeUndefined();
 
     const newFromReanalysis = docs.find((d) => d.name === "Justificatif IA (nouvelle analyse)");
     expect(newFromReanalysis).toBeTruthy();

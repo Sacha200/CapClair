@@ -106,11 +106,16 @@ function RequiredDocNoteForm({
   const [busy, setBusy] = useState(false);
 
   async function save() {
+    const trimmed = note.trim();
     setBusy(true);
     try {
-      const trimmed = note.trim();
       await updateRequiredDoc(caseFileId, doc.id, { userNote: trimmed === "" ? null : trimmed });
       router.refresh();
+    } catch {
+      // Repli sur la note d'origine — pas de message d'erreur dédié ici
+      // (aucune AC US-5.3 ne le demande pour la note), même esprit que le
+      // rattrapage de `toggle()` ci-dessus.
+      setNote(doc.userNote ?? "");
     } finally {
       setBusy(false);
     }

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it } from "vitest";
 import { vi } from "vitest";
 import { makeRequiredDoc } from "@/components/cases/result.fixture";
@@ -56,6 +56,22 @@ describe("PilotageRequiredDocsList (US-5.3)", () => {
     expect(updateRequiredDoc).toHaveBeenCalledWith(CASE_ID, "d1", {
       userNote: "Demandé un duplicata à la banque",
     });
+  });
+
+  it("échec réseau à la sauvegarde de la note → repli sur la note d'origine, pas de rejet non attrapé", async () => {
+    updateRequiredDoc.mockRejectedValue(new Error("network error"));
+    const doc = makeRequiredDoc({ id: "d1", name: "RIB", userNote: "Note initiale" });
+    render(<PilotageRequiredDocsList caseFileId={CASE_ID} requiredDocuments={[doc]} />);
+
+    const noteField = screen.getByLabelText("Note") as HTMLInputElement;
+    fireEvent.change(noteField, { target: { value: "Note modifiée" } });
+    fireEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
+
+    expect(updateRequiredDoc).toHaveBeenCalledWith(CASE_ID, "d1", { userNote: "Note modifiée" });
+    // `save()` catche l'échec (comme `toggle()`) : repli sur la valeur d'origine,
+    // pas de propagation en rejet non attrapé.
+    await waitFor(() => expect(noteField.value).toBe("Note initiale"));
+    expect(refresh).not.toHaveBeenCalled();
   });
 
   it("compteur « X sur Y justificatifs prêts » correct sur un jeu de données mixte", () => {
