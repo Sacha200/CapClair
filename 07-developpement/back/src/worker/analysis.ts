@@ -30,6 +30,31 @@ import type { ConfidenceLevel, Organisme } from "../generated/prisma/client.js";
 /** 1 appel initial + 1 relance si la réponse ne valide pas le schéma (plan E3 §2 #12). */
 const MAX_VALIDATION_ATTEMPTS = 2;
 
+/**
+ * US-5.4 (décision #7) — notifie l'utilisateur de l'issue de l'analyse.
+ * Best-effort, volontairement isolée dans son propre `try/catch` : une erreur
+ * d'écriture de `Notification` ne doit jamais rétrograder un succès déjà
+ * committé vers `ECHEC`, ni faire fuir une exception hors de `runAnalysisJob`
+ * (l'invariant « n'échoue jamais » du module, cf. en-tête, s'applique aussi à
+ * cet effet de bord secondaire) — seulement journalisée.
+ */
+async function notifyAnalysisOutcome(input: {
+  caseFileId: string;
+  userId: string;
+  type: "ANALYSE_TERMINEE" | "ANALYSE_ECHEC";
+  title: string;
+  body: string;
+}): Promise<void> {
+  try {
+    await recordAnalysisNotification(input);
+  } catch (err) {
+    logger.error(
+      { err, caseFileId: input.caseFileId },
+      "Échec de l'écriture de la notification d'analyse",
+    );
+  }
+}
+
 class AnalysisValidationError extends Error {
   constructor(attempts: number) {
     super(`Réponse IA invalide après ${attempts} tentative(s).`);
@@ -158,7 +183,7 @@ export async function runAnalysisJob(caseFileId: string): Promise<void> {
     });
     // US-5.4 (décision #7) — notifie l'utilisateur ; `body` = titre du dossier,
     // jamais un extrait du courrier (même contrainte que l'AuditEvent ci-dessus).
-    await recordAnalysisNotification({
+    await notifyAnalysisOutcome({
       caseFileId,
       userId,
       type: "ANALYSE_TERMINEE",
@@ -179,7 +204,7 @@ export async function runAnalysisJob(caseFileId: string): Promise<void> {
     // `userId` reste `null` si l'échec survient avant le chargement du contexte
     // (dossier/document introuvable) : pas de notification possible dans ce cas.
     if (userId) {
-      await recordAnalysisNotification({
+      await notifyAnalysisOutcome({
         caseFileId,
         userId,
         type: "ANALYSE_ECHEC",
