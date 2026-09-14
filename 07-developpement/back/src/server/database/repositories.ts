@@ -14,6 +14,7 @@ import type {
   AnalysisStatus,
   CaseStatus,
   ConsentType,
+  Notification,
   Organisme,
   Prisma,
   PrismaClient,
@@ -178,6 +179,92 @@ export class CaseFileRepository {
     });
     return { from: caseFile.status };
   }
+
+  /**
+   * US-5.4 — liste des dossiers + résumé pour le tableau de bord, en un nombre borné de requêtes.
+   * `actionsRemaining`/`actionsTotal` par dossier : compte les ActionItem liés (pas de N+1 — utilise
+   * `include: { actionItems: { select: { done: true } } }` sur la requête de liste, puis calcule en
+   * mémoire ; le jeu de dossiers d'un compte reste petit, pas besoin d'agrégation SQL dédiée).
+   */
+  async listWithSummaryForUser(): Promise<{
+    cases: CaseFileListRow[];
+    summary: DashboardSummaryRow;
+  }> {
+    const cases = await this.prisma.caseFile.findMany({
+      where: { userId: this.userId, deletedAt: null },
+      orderBy: { lastActivityAt: "desc" },
+      include: { actionItems: { select: { done: true } } },
+    });
+
+    const now = new Date();
+    const in7Days = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+    let activeCount = 0;
+    let deadlineWithin7DaysCount = 0;
+    let remainingActionsCount = 0;
+    const recentAnalyses: DashboardSummaryRow["recentAnalyses"] = [];
+
+    for (const caseFile of cases) {
+      const isActive = caseFile.status !== "TERMINE";
+      if (isActive) {
+        activeCount += 1;
+        if (
+          caseFile.mainDeadline !== null &&
+          caseFile.mainDeadline >= now &&
+          caseFile.mainDeadline <= in7Days
+        ) {
+          deadlineWithin7DaysCount += 1;
+        }
+        remainingActionsCount += caseFile.actionItems.filter((action) => !action.done).length;
+      }
+      if (caseFile.analysisStatus === "TERMINEE" && recentAnalyses.length < 5) {
+        recentAnalyses.push({
+          id: caseFile.id,
+          title: caseFile.title,
+          organisme: caseFile.organisme,
+          analysisStatus: caseFile.analysisStatus,
+          analyzedAt: caseFile.lastActivityAt,
+        });
+      }
+    }
+
+    const recentNotifications = await this.prisma.notification.findMany({
+      where: { userId: this.userId },
+      orderBy: { createdAt: "desc" },
+      take: 10,
+    });
+
+    return {
+      cases,
+      summary: {
+        activeCount,
+        deadlineWithin7DaysCount,
+        remainingActionsCount,
+        recentAnalyses,
+        recentNotifications,
+      },
+    };
+  }
+}
+
+/** Ligne de dossier de `listWithSummaryForUser` (graphe incluant les actions, pour le tableau de bord). */
+export type CaseFileListRow = Prisma.CaseFileGetPayload<{
+  include: { actionItems: { select: { done: true } } };
+}>;
+
+/** Résumé du tableau de bord produit par `listWithSummaryForUser`. */
+export interface DashboardSummaryRow {
+  activeCount: number;
+  deadlineWithin7DaysCount: number;
+  remainingActionsCount: number;
+  recentAnalyses: Array<{
+    id: string;
+    title: string;
+    organisme: Organisme;
+    analysisStatus: AnalysisStatus;
+    analyzedAt: Date;
+  }>;
+  recentNotifications: Notification[];
 }
 
 /** Base commune aux entités rattachées à un dossier (filtre via `caseFile.userId`). */

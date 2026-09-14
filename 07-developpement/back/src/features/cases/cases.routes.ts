@@ -1,6 +1,7 @@
 /**
  * Routes de dossiers (préfixe `/api`, scope gardé — voir app.ts).
  *
+ * - `GET   /api/dossiers`                           liste des dossiers + résumé (tableau de bord, US-5.4)
  * - `GET   /api/dossiers/:id`                       statut d'analyse (polling écran 04)
  * - `GET   /api/dossiers/:id/resultat`              graphe complet de l'analyse (écran 05, E4)
  * - `GET   /api/dossiers/:id/historique`            historique du dossier (US-4.5)
@@ -45,6 +46,16 @@ const IdDocParamsSchema = z.object({ id: z.string().uuid(), docId: z.string().uu
 
 export const caseRoutes: FastifyPluginAsync = async (fastify) => {
   const app = fastify.withTypeProvider<ZodTypeProvider>();
+
+  // Liste des dossiers + résumé (tableau de bord, US-5.4) : lecture d'écran →
+  // pas de preset serré, comme les autres `GET` de ce fichier.
+  app.get(
+    "/api/dossiers",
+    async (request) => {
+      const db = forUser(requireUser(request).id);
+      return casesService.listCasesWithSummary(db);
+    },
+  );
 
   // Statut d'analyse : consulté en **polling** (2 s, écran 04) — il ne porte
   // donc PAS le preset serré `RATE_LIMITS.analysis` (10/min), qui protège les

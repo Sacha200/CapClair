@@ -1,5 +1,13 @@
-import type { CaseFileRepository } from "../../server/database/repositories.js";
-import type { CaseFileResultResponse, CaseFileStatusResponse } from "./cases.dto.js";
+import type {
+  CaseFileListRow,
+  CaseFileRepository,
+  DashboardSummaryRow,
+} from "../../server/database/repositories.js";
+import type {
+  CaseFileListResponse,
+  CaseFileResultResponse,
+  CaseFileStatusResponse,
+} from "./cases.dto.js";
 
 /**
  * Projette un dossier vers le DTO de statut (support du polling écran 04).
@@ -175,5 +183,53 @@ export function toCaseResultDto(
     infosToVerify,
     responseDraft,
     lockedFields,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// E5 US-5.4 — tableau de bord
+// ---------------------------------------------------------------------------
+
+/** US-5.4 — DTO liste + résumé. Aucun contenu de courrier (pas de sourceExcerpt/extractedText ici). */
+export function toCaseListDto(
+  cases: CaseFileListRow[],
+  summary: DashboardSummaryRow,
+): CaseFileListResponse {
+  return {
+    cases: cases.map((caseFile) => {
+      const actionsTotal = caseFile.actionItems.length;
+      const actionsRemaining = caseFile.actionItems.filter((action) => !action.done).length;
+      return {
+        id: caseFile.id,
+        title: caseFile.title,
+        organisme: caseFile.organisme,
+        status: caseFile.status,
+        analysisStatus: caseFile.analysisStatus,
+        mainDeadline: caseFile.mainDeadline ? caseFile.mainDeadline.toISOString() : null,
+        actionsRemaining,
+        actionsTotal,
+        lastActivityAt: caseFile.lastActivityAt.toISOString(),
+      };
+    }),
+    summary: {
+      activeCount: summary.activeCount,
+      deadlineWithin7DaysCount: summary.deadlineWithin7DaysCount,
+      remainingActionsCount: summary.remainingActionsCount,
+      recentAnalyses: summary.recentAnalyses.map((analysis) => ({
+        id: analysis.id,
+        title: analysis.title,
+        organisme: analysis.organisme,
+        analysisStatus: analysis.analysisStatus,
+        analyzedAt: analysis.analyzedAt ? analysis.analyzedAt.toISOString() : null,
+      })),
+      recentNotifications: summary.recentNotifications.map((notification) => ({
+        id: notification.id,
+        type: notification.type,
+        title: notification.title,
+        body: notification.body,
+        read: notification.read,
+        createdAt: notification.createdAt.toISOString(),
+      })),
+    },
   };
 }

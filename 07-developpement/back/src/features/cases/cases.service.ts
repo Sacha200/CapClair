@@ -13,10 +13,11 @@ import { LEGAL_BUNDLE_VERSION } from "../../lib/legal.js";
 import { enqueueAnalysis } from "../../server/queues/analysis.js";
 import { rescheduleForCaseFile } from "../reminders/reschedule.js";
 import { historyLabel } from "./history-label.js";
-import { toCaseResultDto } from "./cases.mapper.js";
+import { toCaseListDto, toCaseResultDto } from "./cases.mapper.js";
 import {
   ANALYSIS_MESSAGES,
   type CaseFileHistoryResponse,
+  type CaseFileListResponse,
   type CaseFileResultResponse,
   type CreateActionInput,
   type UpdateActionInput,
@@ -277,6 +278,16 @@ export async function updateRequiredDocument(
   input: UpdateRequiredDocInput,
 ): Promise<void> {
   await db.requiredDocs.updateForUser(caseFileId, docId, input);
+}
+
+/**
+ * US-5.4 — liste des dossiers du compte + résumé pour le tableau de bord.
+ * Isolation par compte déjà garantie par `db.caseFiles.listWithSummaryForUser`
+ * (scopée `userId`, US-1.5) : aucun filtrage supplémentaire ici.
+ */
+export async function listCasesWithSummary(db: UserScopedDb): Promise<CaseFileListResponse> {
+  const { cases, summary } = await db.caseFiles.listWithSummaryForUser();
+  return toCaseListDto(cases, summary);
 }
 
 /**
