@@ -12,6 +12,7 @@ export function makeResult(
   return {
     id: "11111111-1111-4111-8111-111111111111",
     analysisStatus: "TERMINEE",
+    status: "A_ANALYSER",
     organisme: "CAF",
     title: "Demande de justificatifs",
     documentDate: "2026-07-03T00:00:00.000Z",
