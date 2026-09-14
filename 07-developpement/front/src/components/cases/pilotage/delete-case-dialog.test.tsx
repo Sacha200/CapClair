@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { ApiError } from "@/lib/api/errors";
 
 const push = vi.fn();
 const deleteCase = vi.fn();
@@ -48,6 +49,21 @@ describe("DeleteCaseDialog (US-5.5)", () => {
 
     await waitFor(() => expect(deleteCase).toHaveBeenCalledWith(CASE_ID));
     await waitFor(() => expect(push).toHaveBeenCalledWith("/dashboard"));
+  });
+
+  it("échec de deleteCase → message d'erreur visible, panneau de confirmation conservé, pas de redirection", async () => {
+    deleteCase.mockRejectedValue(
+      new ApiError(500, { error: "La suppression n'a pas abouti. Réessayez." }),
+    );
+    render(<DeleteCaseDialog caseFileId={CASE_ID} />);
+    fireEvent.click(screen.getByRole("button", { name: "Supprimer ce dossier" }));
+    fireEvent.click(screen.getByRole("button", { name: "Confirmer la suppression" }));
+
+    await waitFor(() => expect(deleteCase).toHaveBeenCalledWith(CASE_ID));
+    expect(await screen.findByText("La suppression n'a pas abouti. Réessayez.")).toBeInTheDocument();
+    // Le panneau de confirmation reste affiché (pas de retour silencieux à l'état par défaut).
+    expect(screen.getByRole("button", { name: "Confirmer la suppression" })).toBeInTheDocument();
+    expect(push).not.toHaveBeenCalled();
   });
 
   it("clic « Annuler » → aucun appel API, retour à l'état par défaut", () => {

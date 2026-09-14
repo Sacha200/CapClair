@@ -2,8 +2,9 @@
  * `DELETE /api/dossiers/:id` — suppression définitive et complète d'un dossier
  * (E5, US-5.5). Aucune confirmation supplémentaire côté serveur (AC1 est une
  * responsabilité front). Vérifie l'absence de ligne orpheline dans toutes les
- * entités liées, l'exception documentée de l'`AuditEvent` de suppression
- * (AC4 : conservé, `caseFileId` mis à `null`), et la purge physique du/des
+ * entités liées, les DEUX exceptions SetNull délibérées et symétriques
+ * (`AuditEvent "case.deleted"` ET `ConsentLog` — tous deux survivent orphelins,
+ * `caseFileId` mis à `null`, décision #11 du plan), et la purge physique du/des
  * fichier(s) sur disque. `deleteIfUnanalyzed` (E2) n'est pas concernée par ce
  * fichier — méthode distincte, cas d'usage différent. IPs : 198.51.100.180 à .186.
  */
@@ -104,6 +105,18 @@ async function seedFullCaseGraph(cookie: string, userId: string, remoteAddress: 
       data: { userId, caseFileId, eventType: "action.completed", metadata: {} },
     }),
   ]);
+  // Décision #11 du plan : preuve de consentement passé, doit survivre
+  // orpheline au même titre que l'AuditEvent de suppression (ConsentLog est
+  // `onDelete: SetNull`, pas `Cascade` — ce n'est PAS une table vidée).
+  const consentLog = await prisma.consentLog.create({
+    data: {
+      userId,
+      caseFileId,
+      consentType: "AI_PROCESSING",
+      granted: true,
+      policyVersion: "v1",
+    },
+  });
 
   return {
     caseFileId,
@@ -117,6 +130,7 @@ async function seedFullCaseGraph(cookie: string, userId: string, remoteAddress: 
     reminderId: reminder.id,
     notificationId: notification.id,
     preexistingEventIds: preexistingEvents.map((e) => e.id),
+    consentLogId: consentLog.id,
   };
 }
 
@@ -168,6 +182,16 @@ describe("DELETE /api/dossiers/:id", () => {
       where: { id: { in: graph.preexistingEventIds } },
     });
     expect(survivingPreexisting).toEqual([]);
+
+    // Deuxième exception SetNull délibérée (décision #11) : ConsentLog n'est
+    // PAS dans la liste des tables vidées — la ligne survit, orpheline
+    // (caseFileId mis à null par Postgres), au lieu d'être supprimée ou
+    // laissée avec un caseFileId pointant vers un dossier disparu.
+    const survivingConsentLog = await prisma.consentLog.findUnique({
+      where: { id: graph.consentLogId },
+    });
+    expect(survivingConsentLog).not.toBeNull();
+    expect(survivingConsentLog?.caseFileId).toBeNull();
 
     // Fichier physique absent.
     expect(existsSync(graph.diskPath)).toBe(false);

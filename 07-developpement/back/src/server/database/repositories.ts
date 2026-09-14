@@ -102,11 +102,17 @@ export class CaseFileRepository {
    * 3. Supprime tous les AUTRES AuditEvent de ce dossier (pour que seul l'événement de suppression
    *    survive après coup, AC4 — "seul l'AuditEvent de suppression conservé").
    * 4. Supprime le CaseFile lui-même — Prisma cascade automatiquement Document/ExtractedInformation/
-   *    ActionItem/RequiredDocument/ResponseDraft/Reminder/ConsentLog/Notification (onDelete: Cascade
-   *    déjà en place sur tous ces modèles). L'AuditEvent de suppression créé à l'étape 2, lui, a une
-   *    relation `onDelete: SetNull` vers CaseFile — il survit avec caseFileId mis à null par Postgres,
-   *    exactement le comportement voulu (AC4 : conservé, mais sans lien vers un dossier qui n'existe
-   *    plus).
+   *    ActionItem/RequiredDocument/ResponseDraft/Reminder/Notification (onDelete: Cascade déjà en
+   *    place sur tous ces modèles).
+   *
+   * Deux exceptions SetNull délibérées, symétriques, survivent orphelines (caseFileId mis à null par
+   * Postgres) — aucune des deux n'est vidée par cette méthode :
+   *  - L'AuditEvent "case.deleted" créé à l'étape 2 (AC4 : conservé, mais sans lien vers un dossier
+   *    qui n'existe plus) ;
+   *  - ConsentLog (`onDelete: SetNull` dans le schéma, jamais `Cascade` — vérifié, pas une supposition)
+   *    : preuve de consentement passé, qui doit survivre indépendamment du dossier au même titre que
+   *    l'AuditEvent (raisonnement délibéré du plan, décision #11 — pas la liste groupée, erronée sur ce
+   *    point, de la décision #10).
    * Toutes les étapes 2-4 dans UNE SEULE transaction Prisma ($transaction) pour la cohérence.
    * Renvoie les storagePath des documents du dossier (récupérés avant la transaction) pour que
    * l'appelant purge les fichiers sur disque après coup.

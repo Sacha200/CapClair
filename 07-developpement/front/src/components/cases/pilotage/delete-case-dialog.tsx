@@ -31,11 +31,14 @@ export function DeleteCaseDialog({ caseFileId }: { caseFileId: string }) {
       await deleteCase(caseFileId);
       router.push("/dashboard");
     } catch (err) {
+      // Le panneau de confirmation reste ouvert (`confirming` inchangé) :
+      // c'est la seule branche de rendu qui affiche le message d'erreur
+      // ci-dessous. Le repasser à `false` ferait disparaître l'échec sans
+      // aucun retour visuel pour une action irréversible.
       setError(
         err instanceof ApiError ? err.message : "La suppression n'a pas abouti. Réessayez.",
       );
       setBusy(false);
-      setConfirming(false);
     }
   }
 
