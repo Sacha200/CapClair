@@ -110,7 +110,8 @@ describe("runAnalysisJob", () => {
     });
 
     expect(caseFile.analysisStatus).toBe("TERMINEE");
-    expect(caseFile.status).toBe("A_FAIRE");
+    // US-5.1 — statut dérivé du nombre d'actions : ≥ 1 action → ACTION_REQUISE.
+    expect(caseFile.status).toBe("ACTION_REQUISE");
     expect(caseFile.organisme).toBe("CAF");
     expect(caseFile.title).toBe("Demande de pièces justificatives");
     expect(caseFile.summary).toBe(SUMMARY);

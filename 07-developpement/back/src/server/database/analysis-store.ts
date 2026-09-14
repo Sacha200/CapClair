@@ -11,7 +11,9 @@
  *
  * `applyAnalysis` est une transaction unique et idempotente (plan E3 §6.1) :
  * une ré-analyse remplace intégralement le graphe dérivé, SAUF les lignes
- * `ExtractedInformation.isUserCorrected = true` (la correction prime — §2 #11).
+ * `ExtractedInformation.isUserCorrected = true` (la correction prime — §2 #11)
+ * et, depuis E5 (US-5.2), les `ActionItem`/`RequiredDocument` déjà traités par
+ * l'utilisateur (cochés, ajoutés à la main, ou porteurs d'une note).
  */
 import { prisma } from "./client.js";
 import { NotFoundError } from "../../lib/errors.js";
@@ -170,13 +172,13 @@ export async function applyAnalysis(
     if (!exists) throw new NotFoundError("caseFile");
 
     // US-4.4 AC3 — un champ scalaire corrigé à la main (`userLockedFields`)
-    // n'est plus réécrit par une ré-analyse. `summary`/`warnings` et les
-    // statuts ne sont pas verrouillables (aucune AC ne le demande).
+    // n'est plus réécrit par une ré-analyse. `summary`/`warnings` ne sont pas
+    // verrouillables (aucune AC ne le demande) ; `status` l'est depuis E5
+    // (US-5.1 — un changement manuel via `PATCH …/statut` le verrouille).
     const locked = new Set(exists.userLockedFields);
     const data: Prisma.CaseFileUpdateInput = {
       summary: result.summary,
       warnings: result.warnings,
-      status: "A_FAIRE",
       analysisStatus: "TERMINEE",
       lastActivityAt: new Date(),
     };
@@ -191,6 +193,11 @@ export async function applyAnalysis(
       data.mainDeadlineType = result.mainDeadline?.type ?? null;
       data.mainDeadlineSourceExcerpt = result.mainDeadline?.sourceExcerpt ?? null;
       data.mainDeadlineConfidence = result.mainDeadline?.confidence ?? null;
+    }
+    // US-5.1 — statut dérivé automatiquement de la présence d'actions, sauf
+    // verrouillage manuel (US-5.1 AC2, `PATCH …/statut`).
+    if (!locked.has("status")) {
+      data.status = result.actions.length > 0 ? "ACTION_REQUISE" : "TERMINE";
     }
     await tx.caseFile.update({ where: { id: caseFileId }, data });
 
@@ -212,9 +219,11 @@ export async function applyAnalysis(
       });
     }
 
-    // ActionItem / RequiredDocument : pas de flag de protection au MVP
-    // (plan E3 §9.6) — remplacement intégral à chaque analyse réussie.
-    await tx.actionItem.deleteMany({ where: { caseFileId } });
+    // US-5.2/§9.6 E3 — ne supprime que ce qu'une ré-analyse peut sûrement remplacer : une action issue
+    // de l'IA et non cochée. Une action cochée (même issue de l'IA) ou ajoutée à la main est protégée.
+    await tx.actionItem.deleteMany({
+      where: { caseFileId, origin: "ANALYSE", done: false },
+    });
     if (result.actions.length > 0) {
       await tx.actionItem.createMany({
         data: result.actions.map((action) => ({
@@ -230,7 +239,10 @@ export async function applyAnalysis(
       });
     }
 
-    await tx.requiredDocument.deleteMany({ where: { caseFileId } });
+    // Idem — protégé dès que l'utilisateur a coché "fourni" ou laissé une note.
+    await tx.requiredDocument.deleteMany({
+      where: { caseFileId, provided: false, userNote: null },
+    });
     if (result.requiredDocuments.length > 0) {
       await tx.requiredDocument.createMany({
         data: result.requiredDocuments.map((doc) => ({
