@@ -80,6 +80,39 @@ describe("AnalysisResult — écran 05", () => {
     expect(screen.getByText("Échéance dépassée.")).toBeInTheDocument();
   });
 
+  it("action MANUEL (sourceExcerpt null) : aucun avertissement d'extrait non retrouvé (US-5.2)", () => {
+    render(
+      <AnalysisResult
+        data={makeResult({
+          actions: [
+            makeAction({
+              id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+              title: "Ajoutée à la main",
+              origin: "MANUEL",
+              sourceExcerpt: null,
+              verifiable: null,
+            }),
+            makeAction({
+              id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+              title: "Envoyer le justificatif de domicile",
+              sourceExcerpt: "merci de nous transmettre un justificatif de domicile",
+              verifiable: true,
+            }),
+          ],
+        })}
+      />,
+    );
+    const actionsSection = screen
+      .getByRole("heading", { name: "Actions à faire (2)" })
+      .closest("section")!;
+    // Une seule des deux actions (celle avec sourceExcerpt non nul) expose le disclosure.
+    expect(within(actionsSection).getAllByText(/voir l'extrait/i)).toHaveLength(1);
+    // Jamais le faux signal « extrait non retrouvé » pour l'action MANUEL.
+    expect(
+      within(actionsSection).queryByText(/non retrouvé tel quel dans le document/i),
+    ).not.toBeInTheDocument();
+  });
+
   it("bandeau récap rendu quand infosToVerify n'est pas vide", () => {
     render(
       <AnalysisResult

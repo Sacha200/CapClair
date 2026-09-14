@@ -39,13 +39,18 @@ export function ActionsList({ actions }: { actions: ResultAction[] }) {
                     {due ? (
                       <p className="mt-0.5 text-xs text-text-muted">Pour le {due}</p>
                     ) : null}
-                    {/* E5 — `sourceExcerpt`/`verifiable` sont nullables depuis Task 2 (US-5.2,
-                        une action MANUEL n'a pas d'extrait) ; en pratique toujours non nuls ici
-                        (actions issues de l'analyse) — repli défensif pour satisfaire le type. */}
-                    <SourceExcerptDisclosure
-                      excerpt={action.sourceExcerpt ?? ""}
-                      verifiable={action.verifiable ?? false}
-                    />
+                    {/* E5 — `sourceExcerpt` est nullable depuis Task 2 (US-5.2) : une action
+                        MANUEL n'a pas d'extrait. Ne pas rendre l'extrait dans ce cas — sinon
+                        `verifiable` retombe sur `false` et affiche à tort l'avertissement
+                        « extrait non retrouvé » (signal anti-hallucination), alors que
+                        l'action n'a jamais eu d'extrait à vérifier. Même règle que
+                        `pilotage/pilotage-actions-list.tsx` (écran 06). */}
+                    {action.sourceExcerpt !== null ? (
+                      <SourceExcerptDisclosure
+                        excerpt={action.sourceExcerpt}
+                        verifiable={Boolean(action.verifiable)}
+                      />
+                    ) : null}
                   </div>
                 </div>
               </li>
