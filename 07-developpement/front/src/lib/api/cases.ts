@@ -7,8 +7,11 @@ import {
   type CaseFileHistoryResponse,
   type CaseFileResultResponse,
   type CaseFileStatusResponse,
+  type CreateActionInput,
   type StartAnalysisResponse,
+  type UpdateActionInput,
   type UpdateCaseScalarsInput,
+  type UpdateCaseStatusInput,
   type UpdateExtractedInfoInput,
   type UpdateMainDeadlineInput,
 } from "@capclair/contract";
@@ -89,4 +92,31 @@ export function getCaseHistory(
   cookieHeader?: string,
 ): Promise<CaseFileHistoryResponse> {
   return apiRequest(CASE_FILE_PATHS.history(id), { method: "GET", cookieHeader });
+}
+
+/** US-5.1 AC2 — change le statut de pilotage du dossier (écran 06). */
+export function updateCaseStatus(
+  id: string,
+  body: UpdateCaseStatusInput,
+): Promise<{ ok: true }> {
+  return apiRequest(CASE_FILE_PATHS.status(id), { method: "PATCH", body });
+}
+
+/** US-5.2 AC2 — ajoute une action manuelle (écran 06). */
+export function createAction(id: string, body: CreateActionInput): Promise<{ id: string }> {
+  return apiRequest(CASE_FILE_PATHS.actions(id), { method: "POST", body });
+}
+
+/** US-5.2 AC1 — coche/décoche une action (écran 06). */
+export function toggleAction(
+  id: string,
+  actionId: string,
+  body: UpdateActionInput,
+): Promise<{ ok: true }> {
+  return apiRequest(CASE_FILE_PATHS.action(id, actionId), { method: "PATCH", body });
+}
+
+/** US-5.2 AC3 — supprime définitivement une action (écran 06). */
+export function deleteAction(id: string, actionId: string): Promise<{ ok: true }> {
+  return apiRequest(CASE_FILE_PATHS.action(id, actionId), { method: "DELETE" });
 }

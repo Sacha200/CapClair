@@ -10,70 +10,52 @@ const notFound = vi.fn(() => {
 
 vi.mock("@/lib/api/cases", () => ({
   getCaseResult: (...a: unknown[]) => getCaseResult(...a),
-  // Historique (PR-D) : chargé côté client par <CaseHistory> dans l'écran 05.
-  getCaseHistory: () => Promise.resolve({ entries: [] }),
 }));
 vi.mock("@/lib/session", () => ({ readCookieHeader: () => Promise.resolve("capclair_session=x") }));
-// `useRouter` : requis depuis la PR-C — l'écran 05 rend des formulaires de
-// correction (client components) qui l'appellent au rendu.
 vi.mock("next/navigation", () => ({
   notFound: () => notFound(),
   useRouter: () => ({ refresh: vi.fn() }),
 }));
-// L'écran d'attente est un client component avec polling — on le neutralise.
+// L'écran d'attente est un client component avec polling — on le neutralise
+// (même gabarit que `dossiers/[id]/page.test.tsx`, écran 05).
 vi.mock("@/components/cases/analysis-waiting", () => ({
   AnalysisWaiting: () => <div data-testid="waiting" />,
 }));
 
-import DossierPage from "./page";
+import PilotagePage from "./page";
 
 const params = Promise.resolve({ id: "11111111-1111-4111-8111-111111111111" });
 
-describe("DossierPage — bascule attente / résultat", () => {
+describe("PilotagePage — écran 06 (amorce)", () => {
   beforeEach(() => {
     getCaseResult.mockReset();
     notFound.mockClear();
   });
 
-  it("200 TERMINEE → rend l'écran 05", async () => {
+  it("200 TERMINEE → rend <CasePilotage>", async () => {
     getCaseResult.mockResolvedValue(makeResult());
-    render(await DossierPage({ params }));
+    render(await PilotagePage({ params }));
     expect(
-      screen.getByRole("heading", { level: 1, name: "Demande de justificatifs" }),
+      screen.getByRole("heading", { level: 1, name: "Pilotage du dossier" }),
     ).toBeInTheDocument();
     expect(screen.queryByTestId("waiting")).not.toBeInTheDocument();
   });
 
-  it("badge de statut dynamique (E5) — libellé FR de data.status", async () => {
-    getCaseResult.mockResolvedValue(makeResult({ status: "ACTION_REQUISE" }));
-    render(await DossierPage({ params }));
-    expect(screen.getByText("Action requise")).toBeInTheDocument();
-  });
-
-  it("lien « Piloter ce dossier » vers l'écran 06 (E5)", async () => {
-    getCaseResult.mockResolvedValue(makeResult());
-    render(await DossierPage({ params }));
-    expect(screen.getByRole("link", { name: "Piloter ce dossier" })).toHaveAttribute(
-      "href",
-      "/dossiers/11111111-1111-4111-8111-111111111111/pilotage",
-    );
-  });
-
   it("409 analysis_not_ready → rend l'écran d'attente", async () => {
     getCaseResult.mockRejectedValue(new ApiError(409, { code: "analysis_not_ready" }));
-    render(await DossierPage({ params }));
+    render(await PilotagePage({ params }));
     expect(screen.getByTestId("waiting")).toBeInTheDocument();
   });
 
   it("404 → notFound()", async () => {
     getCaseResult.mockRejectedValue(new ApiError(404, {}));
-    await expect(DossierPage({ params })).rejects.toThrow("NEXT_NOT_FOUND");
+    await expect(PilotagePage({ params })).rejects.toThrow("NEXT_NOT_FOUND");
     expect(notFound).toHaveBeenCalled();
   });
 
   it("panne réseau (status 0) → écran d'attente, pas d'erreur", async () => {
     getCaseResult.mockRejectedValue(new ApiError(0, { code: "network" }));
-    render(await DossierPage({ params }));
+    render(await PilotagePage({ params }));
     expect(screen.getByTestId("waiting")).toBeInTheDocument();
   });
 });

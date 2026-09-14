@@ -1,5 +1,7 @@
+import Link from "next/link";
 import type { CaseFileResultResponse } from "@capclair/contract";
 import { formatFrenchDate, organismeLabel } from "@/lib/cases/result-format";
+import { caseStatusLabel } from "@/lib/cases/status-label";
 import { ActionsList } from "./actions-list";
 import { CaseHeaderEdit } from "./case-header-edit";
 import { CaseHistory } from "./case-history";
@@ -50,11 +52,22 @@ export function AnalysisResult({
             />
           ) : null}
         </div>
-        {/* Statut du dossier : « À faire » à l'issue de l'analyse. La gestion
-            du cycle de vie du statut est l'epic E5 (US-5.x). */}
-        <span className="inline-flex items-center gap-1.5 rounded-[var(--radius-pill)] bg-bg-subtle py-[5px] pl-2.5 pr-3 text-xs font-semibold text-text-strong">
-          <span className="size-2 rounded-full bg-warning" aria-hidden />À faire
-        </span>
+        {/* Statut de pilotage (US-5.1) : badge non cliquable ici — la
+            modification se fait sur l'écran 06 (`<CaseStatusSelect>`). */}
+        <div className="flex items-center gap-3">
+          <span className="inline-flex items-center gap-1.5 rounded-[var(--radius-pill)] bg-bg-subtle py-[5px] pl-2.5 pr-3 text-xs font-semibold text-text-strong">
+            <span className="size-2 rounded-full bg-warning" aria-hidden />
+            {caseStatusLabel(data.status)}
+          </span>
+          {caseFileId ? (
+            <Link
+              href={`/dossiers/${caseFileId}/pilotage`}
+              className="text-xs font-semibold text-primary hover:underline"
+            >
+              Piloter ce dossier
+            </Link>
+          ) : null}
+        </div>
       </header>
 
       <div className="mt-5 lg:grid lg:grid-cols-[minmax(0,1fr)_460px] lg:items-start lg:gap-5">

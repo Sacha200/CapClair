@@ -39,9 +39,12 @@ export function ActionsList({ actions }: { actions: ResultAction[] }) {
                     {due ? (
                       <p className="mt-0.5 text-xs text-text-muted">Pour le {due}</p>
                     ) : null}
+                    {/* E5 — `sourceExcerpt`/`verifiable` sont nullables depuis Task 2 (US-5.2,
+                        une action MANUEL n'a pas d'extrait) ; en pratique toujours non nuls ici
+                        (actions issues de l'analyse) — repli défensif pour satisfaire le type. */}
                     <SourceExcerptDisclosure
-                      excerpt={action.sourceExcerpt}
-                      verifiable={action.verifiable}
+                      excerpt={action.sourceExcerpt ?? ""}
+                      verifiable={action.verifiable ?? false}
                     />
                   </div>
                 </div>
