@@ -125,17 +125,21 @@ export function toCaseResultDto(
   const actions = row.actionItems.map((action) => ({
     id: action.id,
     title: action.title,
+    description: action.description,
     done: action.done,
     position: action.position,
+    origin: action.origin,
     dueDate: action.dueDate ? action.dueDate.toISOString() : null,
     dueDateType: action.dueDateType,
     dueDateConfidence: action.dueDateConfidence,
     dueDateSourceExcerpt: action.dueDateSourceExcerpt,
-    // E5 — `sourceExcerpt` est désormais nullable en base (une action ajoutée
-    // à la main n'en a pas) ; le contrat garde un `string` non nul (inchangé,
-    // hors périmètre de cette tâche) — absent devient "" (non vérifiable).
-    sourceExcerpt: action.sourceExcerpt ?? "",
-    verifiable: isLiteralExcerpt(action.sourceExcerpt ?? "", extractedText),
+    // E5 US-5.2 — `sourceExcerpt` est nullable en base (une action ajoutée à
+    // la main n'en a pas) : le contrat le reflète désormais tel quel, jamais
+    // de repli sur "" (une action MANUEL n'a pas d'extrait à vérifier, ce
+    // n'est pas la même chose qu'un extrait non retrouvé).
+    sourceExcerpt: action.sourceExcerpt,
+    verifiable:
+      action.sourceExcerpt != null ? isLiteralExcerpt(action.sourceExcerpt, extractedText) : null,
   }));
 
   const requiredDocuments = row.requiredDocs.map((doc) => ({

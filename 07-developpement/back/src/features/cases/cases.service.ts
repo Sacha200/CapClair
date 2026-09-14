@@ -18,6 +18,8 @@ import {
   ANALYSIS_MESSAGES,
   type CaseFileHistoryResponse,
   type CaseFileResultResponse,
+  type CreateActionInput,
+  type UpdateActionInput,
   type UpdateCaseScalarsInput,
   type UpdateCaseStatusInput,
   type UpdateExtractedInfoInput,
@@ -210,6 +212,55 @@ export async function updateCaseStatus(
       metadata: { from, to: input.status },
     });
   }
+}
+
+/**
+ * US-5.2 AC2 — ajoute une action manuelle. Pas d'`AuditEvent` : aucune AC
+ * US-5.2 ne le demande explicitement (contrairement à la suppression, AC3).
+ * 404 si le dossier n'appartient pas au compte.
+ */
+export async function createAction(
+  db: UserScopedDb,
+  caseFileId: string,
+  input: CreateActionInput,
+): Promise<{ id: string }> {
+  const action = await db.actionItems.createForUser(caseFileId, {
+    title: input.title,
+    description: input.description,
+    dueDate: input.dueDate ? isoDateToUtc(input.dueDate) : undefined,
+  });
+  return { id: action.id };
+}
+
+/**
+ * US-5.2 AC1 — coche/décoche une action, journalise (`action.completed` /
+ * `action.reopened`). 404 si `actionId` n'est pas dans ce dossier de ce compte.
+ */
+export async function toggleAction(
+  db: UserScopedDb,
+  caseFileId: string,
+  actionId: string,
+  input: UpdateActionInput,
+): Promise<void> {
+  await db.actionItems.updateForUser(caseFileId, actionId, input);
+  await db.auditEvents.record({
+    caseFileId,
+    eventType: input.done ? "action.completed" : "action.reopened",
+    metadata: { actionId },
+  });
+}
+
+/**
+ * US-5.2 AC3 — suppression définitive d'une action, journalise
+ * (`action.deleted`, événement journalisé). 404 si hors scope.
+ */
+export async function deleteAction(
+  db: UserScopedDb,
+  caseFileId: string,
+  actionId: string,
+): Promise<void> {
+  await db.actionItems.deleteForUser(caseFileId, actionId);
+  await db.auditEvents.record({ caseFileId, eventType: "action.deleted", metadata: { actionId } });
 }
 
 /**

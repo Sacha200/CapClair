@@ -10,6 +10,9 @@
  * - `PATCH /api/dossiers/:id/echeance`              corrige l'échéance principale (US-4.4 AC5)
  * - `PATCH /api/dossiers/:id`                       corrige organisme/type/date (US-4.4 AC1)
  * - `PATCH /api/dossiers/:id/statut`                change le statut de pilotage (US-5.1 AC2)
+ * - `POST  /api/dossiers/:id/actions`               ajoute une action manuelle (US-5.2 AC2)
+ * - `PATCH /api/dossiers/:id/actions/:actionId`     coche/décoche une action (US-5.2 AC1)
+ * - `DELETE /api/dossiers/:id/actions/:actionId`    supprime définitivement une action (US-5.2 AC3)
  *
  * Les routes de *déclenchement* et d'*écriture* (POST, PATCH) portent
  * `config: RATE_LIMITS.analysis` (US-8.1 #48) ; les *lectures* d'écran
@@ -25,6 +28,8 @@ import * as casesService from "./cases.service.js";
 import { toCaseStatusDto } from "./cases.mapper.js";
 import {
   ConfirmAiConsentInputSchema,
+  CreateActionInputSchema,
+  UpdateActionInputSchema,
   UpdateCaseScalarsInputSchema,
   UpdateCaseStatusInputSchema,
   UpdateExtractedInfoInputSchema,
@@ -33,6 +38,7 @@ import {
 
 const IdParamsSchema = z.object({ id: z.string().uuid() });
 const IdInfoParamsSchema = z.object({ id: z.string().uuid(), infoId: z.string().uuid() });
+const IdActionParamsSchema = z.object({ id: z.string().uuid(), actionId: z.string().uuid() });
 
 export const caseRoutes: FastifyPluginAsync = async (fastify) => {
   const app = fastify.withTypeProvider<ZodTypeProvider>();
@@ -166,6 +172,43 @@ export const caseRoutes: FastifyPluginAsync = async (fastify) => {
     async (request) => {
       const db = forUser(requireUser(request).id);
       await casesService.updateCaseStatus(db, request.params.id, request.body);
+      return { ok: true };
+    },
+  );
+
+  // Ajout manuel d'une action (US-5.2 AC2) : `origin: "MANUEL"`, pas d'extrait
+  // source. 404 si le dossier n'appartient pas au compte, 400 sur titre
+  // vide/trop long (schéma).
+  app.post(
+    "/api/dossiers/:id/actions",
+    { config: RATE_LIMITS.analysis, schema: { params: IdParamsSchema, body: CreateActionInputSchema } },
+    async (request, reply) => {
+      const db = forUser(requireUser(request).id);
+      const result = await casesService.createAction(db, request.params.id, request.body);
+      return reply.code(201).send(result);
+    },
+  );
+
+  // Coche/décoche une action (US-5.2 AC1) : journalise `action.completed`/
+  // `action.reopened`. 404 si `actionId` hors du dossier/compte.
+  app.patch(
+    "/api/dossiers/:id/actions/:actionId",
+    { config: RATE_LIMITS.analysis, schema: { params: IdActionParamsSchema, body: UpdateActionInputSchema } },
+    async (request) => {
+      const db = forUser(requireUser(request).id);
+      await casesService.toggleAction(db, request.params.id, request.params.actionId, request.body);
+      return { ok: true };
+    },
+  );
+
+  // Suppression définitive d'une action (US-5.2 AC3) : journalise
+  // `action.deleted`. 404 si hors du dossier/compte.
+  app.delete(
+    "/api/dossiers/:id/actions/:actionId",
+    { config: RATE_LIMITS.analysis, schema: { params: IdActionParamsSchema } },
+    async (request) => {
+      const db = forUser(requireUser(request).id);
+      await casesService.deleteAction(db, request.params.id, request.params.actionId);
       return { ok: true };
     },
   );

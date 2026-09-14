@@ -15,6 +15,7 @@ const LABELS: Record<string, string> = {
   "case.status_changed": "Statut du dossier modifié",
   "action.completed": "Action cochée",
   "action.reopened": "Action rouverte",
+  "action.deleted": "Action supprimée",
   "reminder.sent": "Rappel envoyé",
   "case.deleted": "Dossier supprimé",
 };

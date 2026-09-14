@@ -10,6 +10,7 @@
  * `server/auth/*` doivent passer par `context.forUser(...)` (règle ESLint).
  */
 import type {
+  ActionItem,
   AnalysisStatus,
   CaseStatus,
   ConsentType,
@@ -359,6 +360,71 @@ export class ActionItemRepository extends LinkedRepository {
     });
     if (!row) throw new NotFoundError("actionItem");
     return row;
+  }
+
+  /**
+   * US-5.2 AC2 — création manuelle d'une action. `position` = (max des
+   * positions existantes du dossier) + 1, ou 0 si aucune. 404 si le dossier
+   * n'appartient pas au compte.
+   */
+  async createForUser(
+    caseFileId: string,
+    data: { title: string; description?: string; dueDate?: Date },
+  ) {
+    const caseFile = await this.prisma.caseFile.findFirst({
+      where: { id: caseFileId, ...this.caseFileScope },
+      select: { id: true },
+    });
+    if (!caseFile) throw new NotFoundError("caseFile");
+
+    const last = await this.prisma.actionItem.findFirst({
+      where: { caseFileId },
+      orderBy: { position: "desc" },
+      select: { position: true },
+    });
+    const position = last ? last.position + 1 : 0;
+
+    return this.prisma.actionItem.create({
+      data: {
+        caseFileId,
+        title: data.title,
+        description: data.description ?? null,
+        origin: "MANUEL",
+        sourceExcerpt: null,
+        position,
+        ...(data.dueDate ? { dueDate: data.dueDate, dueDateType: "EXPLICITE" } : {}),
+      },
+    });
+  }
+
+  /**
+   * US-5.2 AC1 — coche/décoche une action. `done: true` fixe `doneAt`,
+   * `done: false` le remet à `null`. 404 si `actionId` n'est pas dans ce
+   * dossier de ce compte.
+   */
+  async updateForUser(
+    caseFileId: string,
+    actionId: string,
+    data: { done: boolean },
+  ): Promise<ActionItem> {
+    const row = await this.prisma.actionItem.findFirst({
+      where: { id: actionId, caseFileId, caseFile: this.caseFileScope },
+    });
+    if (!row) throw new NotFoundError("actionItem");
+    return this.prisma.actionItem.update({
+      where: { id: actionId },
+      data: { done: data.done, doneAt: data.done ? new Date() : null },
+    });
+  }
+
+  /** US-5.2 AC3 — suppression définitive. 404 si hors scope. */
+  async deleteForUser(caseFileId: string, actionId: string): Promise<void> {
+    const row = await this.prisma.actionItem.findFirst({
+      where: { id: actionId, caseFileId, caseFile: this.caseFileScope },
+      select: { id: true },
+    });
+    if (!row) throw new NotFoundError("actionItem");
+    await this.prisma.actionItem.delete({ where: { id: actionId } });
   }
 }
 
