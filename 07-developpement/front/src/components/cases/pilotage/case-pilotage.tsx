@@ -3,12 +3,12 @@ import type { CaseFileResultResponse } from "@capclair/contract";
 import { CaseStatusSelect } from "./case-status-select";
 import { PilotageActionsList } from "./pilotage-actions-list";
 import { PilotageRequiredDocsList } from "./pilotage-required-docs-list";
+import { DeleteCaseDialog } from "./delete-case-dialog";
 
 /**
- * Écran 06 (E5 US-5.1/US-5.2/US-5.3) — pilotage du dossier : statut de
- * pilotage, actions (cocher/ajouter/supprimer) et checklist des justificatifs
- * (fourni/note). La suppression du dossier est hors périmètre de cette tâche
- * (E5, tâche suivante) — volontairement absente ici.
+ * Écran 06 (E5 US-5.1/US-5.2/US-5.3/US-5.5) — pilotage du dossier : statut de
+ * pilotage, actions (cocher/ajouter/supprimer), checklist des justificatifs
+ * (fourni/note) et, en pied d'écran, la suppression définitive du dossier.
  */
 export function CasePilotage({
   data,
@@ -45,6 +45,8 @@ export function CasePilotage({
             requiredDocuments={data.requiredDocuments}
           />
         </div>
+
+        <DeleteCaseDialog caseFileId={caseFileId} />
       </div>
     </div>
   );

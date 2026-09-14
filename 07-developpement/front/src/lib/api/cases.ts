@@ -140,3 +140,8 @@ export function updateRequiredDoc(
 ): Promise<{ ok: true }> {
   return apiRequest(CASE_FILE_PATHS.requiredDoc(id, docId), { method: "PATCH", body });
 }
+
+/** US-5.5 — suppression définitive et complète du dossier (écran 06). */
+export function deleteCase(id: string): Promise<{ ok: true }> {
+  return apiRequest(CASE_FILE_PATHS.detail(id), { method: "DELETE" });
+}
