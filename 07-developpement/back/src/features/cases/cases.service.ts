@@ -12,6 +12,7 @@ import { AppError } from "../../lib/errors.js";
 import { LEGAL_BUNDLE_VERSION } from "../../lib/legal.js";
 import { enqueueAnalysis } from "../../server/queues/analysis.js";
 import { rescheduleForCaseFile } from "../reminders/reschedule.js";
+import * as storage from "../../server/storage/index.js";
 import { historyLabel } from "./history-label.js";
 import { toCaseListDto, toCaseResultDto } from "./cases.mapper.js";
 import {
@@ -278,6 +279,19 @@ export async function updateRequiredDocument(
   input: UpdateRequiredDocInput,
 ): Promise<void> {
   await db.requiredDocs.updateForUser(caseFileId, docId, input);
+}
+
+/**
+ * US-5.5 — suppression définitive et complète d'un dossier. La confirmation
+ * explicite (AC1) est une responsabilité front — aucune confirmation
+ * supplémentaire ici. Purge best-effort des fichiers sur disque après la
+ * transaction en base (`deleteForUser`) : un fichier déjà absent ne fait
+ * jamais échouer la requête (même convention que `documents.service.ts`).
+ * 404 si absent/autre compte.
+ */
+export async function deleteCase(db: UserScopedDb, caseFileId: string): Promise<void> {
+  const { storagePaths } = await db.caseFiles.deleteForUser(caseFileId);
+  await Promise.all(storagePaths.map((p) => storage.deleteDocument(p).catch(() => {})));
 }
 
 /**

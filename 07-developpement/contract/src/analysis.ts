@@ -88,6 +88,8 @@ export const ANALYSIS_MESSAGES = {
   deadlineBeforeDocument: "L'échéance ne peut pas précéder la date du courrier.",
   /** E4 US-4.4 AC1 — `PATCH` de correction reçu sans aucune modification (400). */
   nothingToUpdate: "Aucune modification fournie.",
+  /** E5 US-5.5 AC1 — confirmation explicite avant suppression définitive du dossier (front). */
+  deleteConfirmationRequired: "Cette action est définitive et supprime tout le dossier.",
 } as const;
 
 /** US-2.3 AC2 (confirmation) — même forme que `ConfirmFictionalInputSchema` de `documents.ts`. */

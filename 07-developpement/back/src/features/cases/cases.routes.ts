@@ -15,6 +15,7 @@
  * - `PATCH /api/dossiers/:id/actions/:actionId`     coche/décoche une action (US-5.2 AC1)
  * - `DELETE /api/dossiers/:id/actions/:actionId`    supprime définitivement une action (US-5.2 AC3)
  * - `PATCH /api/dossiers/:id/justificatifs/:docId`  coche « fourni » / note libre (US-5.3 AC1/AC2)
+ * - `DELETE /api/dossiers/:id`                      suppression définitive et complète (US-5.5)
  *
  * Les routes de *déclenchement* et d'*écriture* (POST, PATCH) portent
  * `config: RATE_LIMITS.analysis` (US-8.1 #48) ; les *lectures* d'écran
@@ -244,6 +245,19 @@ export const caseRoutes: FastifyPluginAsync = async (fastify) => {
         request.params.docId,
         request.body,
       );
+      return { ok: true };
+    },
+  );
+
+  // Suppression définitive et complète du dossier (US-5.5) : aucune
+  // confirmation supplémentaire côté serveur — la confirmation explicite
+  // (AC1) est une responsabilité front. 404 si absent/autre compte.
+  app.delete(
+    "/api/dossiers/:id",
+    { config: RATE_LIMITS.analysis, schema: { params: IdParamsSchema } },
+    async (request) => {
+      const db = forUser(requireUser(request).id);
+      await casesService.deleteCase(db, request.params.id);
       return { ok: true };
     },
   );

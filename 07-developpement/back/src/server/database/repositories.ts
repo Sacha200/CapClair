@@ -95,6 +95,43 @@ export class CaseFileRepository {
   }
 
   /**
+   * US-5.5 — suppression définitive et complète d'un dossier. Ordre important (AC4) :
+   * 1. Vérifie que le dossier appartient au compte (404 sinon).
+   * 2. Crée l'AuditEvent "case.deleted" AVANT toute suppression — caseFileId encore valide à ce
+   *    moment, donc l'événement est rattaché normalement à sa création.
+   * 3. Supprime tous les AUTRES AuditEvent de ce dossier (pour que seul l'événement de suppression
+   *    survive après coup, AC4 — "seul l'AuditEvent de suppression conservé").
+   * 4. Supprime le CaseFile lui-même — Prisma cascade automatiquement Document/ExtractedInformation/
+   *    ActionItem/RequiredDocument/ResponseDraft/Reminder/ConsentLog/Notification (onDelete: Cascade
+   *    déjà en place sur tous ces modèles). L'AuditEvent de suppression créé à l'étape 2, lui, a une
+   *    relation `onDelete: SetNull` vers CaseFile — il survit avec caseFileId mis à null par Postgres,
+   *    exactement le comportement voulu (AC4 : conservé, mais sans lien vers un dossier qui n'existe
+   *    plus).
+   * Toutes les étapes 2-4 dans UNE SEULE transaction Prisma ($transaction) pour la cohérence.
+   * Renvoie les storagePath des documents du dossier (récupérés avant la transaction) pour que
+   * l'appelant purge les fichiers sur disque après coup.
+   */
+  async deleteForUser(id: string): Promise<{ storagePaths: string[] }> {
+    await this.findByIdForUser(id); // 404 si absent/autre compte
+    const documents = await this.prisma.document.findMany({
+      where: { caseFileId: id },
+      select: { storagePath: true },
+    });
+
+    await this.prisma.$transaction([
+      this.prisma.auditEvent.create({
+        data: { caseFileId: id, userId: this.userId, eventType: "case.deleted", metadata: {} },
+      }),
+      this.prisma.auditEvent.deleteMany({
+        where: { caseFileId: id, eventType: { not: "case.deleted" } },
+      }),
+      this.prisma.caseFile.delete({ where: { id } }),
+    ]);
+
+    return { storagePaths: documents.map((d) => d.storagePath) };
+  }
+
+  /**
    * Prépare un dossier à (ré)analyse (US-3.1 AC3, D8). Autorisé depuis
    * `EN_ATTENTE` (jamais analysé) ou `ECHEC` (relance, plan E3 §7) ; refusé
    * depuis `EN_COURS`/`TERMINEE` → la route répond 409. Repositionne le statut
