@@ -14,6 +14,7 @@ import {
   type UpdateCaseStatusInput,
   type UpdateExtractedInfoInput,
   type UpdateMainDeadlineInput,
+  type UpdateRequiredDocInput,
 } from "@capclair/contract";
 import { apiRequest } from "./client";
 
@@ -119,4 +120,13 @@ export function toggleAction(
 /** US-5.2 AC3 — supprime définitivement une action (écran 06). */
 export function deleteAction(id: string, actionId: string): Promise<{ ok: true }> {
   return apiRequest(CASE_FILE_PATHS.action(id, actionId), { method: "DELETE" });
+}
+
+/** US-5.3 AC1/AC2 — coche « fourni » et/ou pose une note libre sur un justificatif (écran 06). */
+export function updateRequiredDoc(
+  id: string,
+  docId: string,
+  body: UpdateRequiredDocInput,
+): Promise<{ ok: true }> {
+  return apiRequest(CASE_FILE_PATHS.requiredDoc(id, docId), { method: "PATCH", body });
 }

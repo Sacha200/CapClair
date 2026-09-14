@@ -79,6 +79,7 @@ export function makeRequiredDoc(
     id: "44444444-4444-4444-8444-444444444444",
     name: "Justificatif de domicile de moins de 3 mois",
     provided: false,
+    userNote: null,
     sourceExcerpt: "justificatif de domicile de moins de 3 mois",
     verifiable: true,
     ...overrides,
