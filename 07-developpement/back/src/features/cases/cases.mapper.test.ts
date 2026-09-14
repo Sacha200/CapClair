@@ -37,6 +37,7 @@ function makeRow(over: Partial<Record<string, unknown>> = {}): Row {
   return {
     id: "11111111-1111-1111-1111-111111111111",
     analysisStatus: "TERMINEE",
+    status: "A_ANALYSER",
     organisme: "CAF",
     title: "Demande de pièces justificatives",
     documentDate: new Date("2026-07-03T00:00:00.000Z"),
@@ -169,5 +170,10 @@ describe("toCaseResultDto", () => {
   it("US-8.2 — le texte extrait n'apparaît jamais dans le DTO", () => {
     const dto = toCaseResultDto(makeRow(), TEXT);
     expect(JSON.stringify(dto)).not.toContain("Caisse d'Allocations Familiales");
+  });
+
+  it("E5 US-5.1 — porte le statut de pilotage du dossier", () => {
+    const dto = toCaseResultDto(makeRow({ status: "ACTION_REQUISE" }), TEXT);
+    expect(dto.status).toBe("ACTION_REQUISE");
   });
 });

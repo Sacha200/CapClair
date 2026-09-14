@@ -2,7 +2,12 @@
 import { hashPassword } from "../../src/server/auth/password.js";
 import { createSession } from "../../src/server/auth/session.js";
 import type { PrismaClient } from "../../src/server/database/client.js";
-import type { AnalysisStatus, ConfidenceLevel } from "../../src/generated/prisma/client.js";
+import type {
+  ActionOrigin,
+  AnalysisStatus,
+  CaseStatus,
+  ConfidenceLevel,
+} from "../../src/generated/prisma/client.js";
 
 let counter = 0;
 
@@ -39,6 +44,8 @@ export interface SeedInfo {
 }
 
 export interface SeedCaseGraphOptions {
+  /** E5 US-5.1 — statut de pilotage (défaut "A_ANALYSER"). */
+  status?: CaseStatus;
   analysisStatus?: AnalysisStatus;
   /** US-4.4 AC3 — champs scalaires protégés d'une ré-analyse. */
   userLockedFields?: string[];
@@ -49,6 +56,12 @@ export interface SeedCaseGraphOptions {
   documentDate?: Date;
   /** Remplace l'unique `ExtractedInformation` par défaut. */
   infos?: SeedInfo[];
+  /** E5 US-5.2 — origine de l'`ActionItem` par défaut (protection anti-ré-analyse). */
+  origin?: ActionOrigin;
+  /** E5 US-5.2 — description de l'`ActionItem` par défaut. */
+  description?: string | null;
+  /** E5 US-5.2 — note utilisateur du `RequiredDocument` par défaut (protection anti-ré-analyse). */
+  userNote?: string | null;
 }
 
 /**
@@ -81,6 +94,7 @@ export async function seedCaseGraph(
       organisme: "CAF",
       title: "Dossier de test",
       summary: options.summary ?? "…",
+      ...(options.status ? { status: options.status } : {}),
       ...(options.analysisStatus ? { analysisStatus: options.analysisStatus } : {}),
       ...(options.userLockedFields ? { userLockedFields: options.userLockedFields } : {}),
       ...(options.documentDate ? { documentDate: options.documentDate } : {}),
@@ -119,10 +133,21 @@ export async function seedCaseGraph(
 
   const [actionItem, requiredDoc, responseDraft, reminder] = await Promise.all([
     client.actionItem.create({
-      data: { caseFileId: caseFile.id, title: "Envoyer le justificatif", sourceExcerpt: "…" },
+      data: {
+        caseFileId: caseFile.id,
+        title: "Envoyer le justificatif",
+        sourceExcerpt: "…",
+        ...(options.origin ? { origin: options.origin } : {}),
+        description: options.description ?? null,
+      },
     }),
     client.requiredDocument.create({
-      data: { caseFileId: caseFile.id, name: "Justificatif de domicile", sourceExcerpt: "…" },
+      data: {
+        caseFileId: caseFile.id,
+        name: "Justificatif de domicile",
+        sourceExcerpt: "…",
+        userNote: options.userNote ?? null,
+      },
     }),
     client.responseDraft.create({
       data: { caseFileId: caseFile.id, content: "Madame, Monsieur, …" },
