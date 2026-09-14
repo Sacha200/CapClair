@@ -35,12 +35,21 @@ enum Organisme {
   INDETERMINE
 }
 
-/// Modèle à 4 statuts (décision D9, confirmé au retest).
+/// Modèle à 6 statuts (E5, US-5.1 — remplace les 4 statuts D9 après retest).
 enum CaseStatus {
   A_ANALYSER
-  A_FAIRE
-  EN_ATTENTE_REPONSE
+  ACTION_REQUISE
+  DOCUMENTS_A_PREPARER
+  REPONSE_PRETE
+  EN_ATTENTE
   TERMINE
+}
+
+/// Origine d'une action/checklist (E5) : générée par l'analyse IA, ou ajoutée
+/// à la main. Protège contre l'écrasement par une ré-analyse (US-5.2).
+enum ActionOrigin {
+  ANALYSE
+  MANUEL
 }
 
 /// État du traitement asynchrone d'analyse (décision D8).
@@ -168,9 +177,9 @@ model VerificationToken {
 // ======================= DOSSIER =======================
 
 model CaseFile {
-  id             String         @id @default(uuid())
-  userId         String
-  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id     String @id @default(uuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   organisme      Organisme
   title          String
@@ -184,23 +193,23 @@ model CaseFile {
   mainDeadlineSourceExcerpt String?
   mainDeadlineConfidence    ConfidenceLevel?
 
-  summary        String?   @db.Text
+  summary                   String?   @db.Text
   /// Ancre du calcul des délais relatifs (D7) ; traçabilité de l'origine.
   /// Absente pour certains courriers (repli sur la date d'import, confiance FAIBLE).
   documentDate              DateTime?
   documentDateSourceExcerpt String?
   /// US-3.2 champ 13/13 — avertissements spécifiques au courrier (ex. « suspension
   /// possible du versement »), distincts de l'avertissement fixe de l'écran (US-4.1 AC3).
-  warnings       String[]  @default([])
+  warnings                  String[]  @default([])
   /// US-4.4 AC3 — champs scalaires verrouillés par une correction manuelle :
   /// une ré-analyse ne les écrase plus. Valeurs (contrat `LOCKABLE_FIELDS`) :
   /// "organisme" | "title" | "documentDate" | "mainDeadline". Les lignes
   /// ExtractedInformation gardent leur propre flag `isUserCorrected`.
-  userLockedFields String[] @default([])
-  lastActivityAt DateTime  @default(now())
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-  deletedAt      DateTime?
+  userLockedFields          String[]  @default([])
+  lastActivityAt            DateTime  @default(now())
+  createdAt                 DateTime  @default(now())
+  updatedAt                 DateTime  @updatedAt
+  deletedAt                 DateTime?
 
   documents      Document[]
   extractedInfos ExtractedInformation[]
@@ -224,14 +233,14 @@ model Document {
 
   /// Nom d'origine du fichier envoyé par l'utilisateur — en base uniquement,
   /// jamais utilisé comme nom de fichier sur disque (US-2.1 AC4).
-  originalName String
+  originalName      String
   /// Mime canonique déduit des octets (magic bytes), jamais le mime déclaré client.
-  mimeType     String
-  sizeBytes    Int
+  mimeType          String
+  sizeBytes         Int
   /// Chemin relatif sous STORAGE_DIR ; le basename est un UUID généré serveur.
-  storagePath  String
+  storagePath       String
   /// Texte extrait du PDF. Barrière : pas d'appel IA si < 100 caractères utiles.
-  extractedText     String? @db.Text
+  extractedText     String?  @db.Text
   /// Hash du texte extrait — réutilisé comme clé de cache d'analyse IA (E3).
   extractedTextHash String?
   createdAt         DateTime @default(now())
@@ -267,8 +276,8 @@ model ExtractedInformation {
   categoryId String
   category   Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
 
-  label String
-  value String
+  label           String
+  value           String
   /// Passage littéral du courrier d'où provient l'information (anti-hallucination).
   sourceExcerpt   String          @db.Text
   /// Score brut conservé pour la mesure de qualité ; jamais affiché tel quel (D10).
@@ -289,10 +298,12 @@ model ActionItem {
   caseFile   CaseFile @relation(fields: [caseFileId], references: [id], onDelete: Cascade)
 
   title         String
-  sourceExcerpt String   @db.Text
-  done          Boolean  @default(false)
+  origin        ActionOrigin @default(ANALYSE)
+  description   String?      @db.Text
+  sourceExcerpt String?      @db.Text
+  done          Boolean      @default(false)
   doneAt        DateTime?
-  position      Int      @default(0)
+  position      Int          @default(0)
 
   // Échéance propre à l'action — calculée serveur (D7).
   dueDate              DateTime?
@@ -314,6 +325,7 @@ model RequiredDocument {
   name          String
   sourceExcerpt String   @db.Text
   provided      Boolean  @default(false)
+  userNote      String?  @db.Text
   createdAt     DateTime @default(now())
 
   @@index([caseFileId])
@@ -356,7 +368,7 @@ model Notification {
   userId     String
   user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   caseFileId String?
-  caseFile   CaseFile? @relation(fields: [caseFileId], references: [id], onDelete: SetNull)
+  caseFile   CaseFile? @relation(fields: [caseFileId], references: [id], onDelete: Cascade)
 
   type      NotificationType
   title     String
@@ -377,13 +389,13 @@ model ConsentLog {
   caseFileId String?
   caseFile   CaseFile? @relation(fields: [caseFileId], references: [id], onDelete: SetNull)
 
-  consentType ConsentType
-  granted     Boolean
+  consentType   ConsentType
+  granted       Boolean
   // Version du document accepté (CGU pour E1 : bundle CGU + confidentialité). US-1.1 AC7.
   // Défaut = filet ; l'application passe toujours LEGAL_BUNDLE_VERSION explicitement (ADR-004).
-  policyVersion String    @default("v1")
+  policyVersion String      @default("v1")
   // Immuable : preuve du consentement explicite (fait office d'`acceptedAt`). Pas d'updatedAt.
-  createdAt   DateTime    @default(now())
+  createdAt     DateTime    @default(now())
 
   @@index([userId])
 }

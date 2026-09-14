@@ -30,4 +30,6 @@ export const CASE_FILE_PATHS = {
   deadline: (id: string) => `/api/dossiers/${id}/echeance`,
   // E4 US-4.5 — historique du dossier.
   history: (id: string) => `/api/dossiers/${id}/historique`,
+  // E5 US-5.1 — changement manuel du statut de pilotage.
+  status: (id: string) => `/api/dossiers/${id}/statut`,
 } as const;

@@ -133,8 +133,32 @@ export type DisplayConfidence = z.infer<typeof DisplayConfidenceSchema>;
  * ré-analyse (`applyAnalysis` l'omet). Les lignes `ExtractedInformation`
  * gardent leur propre flag `isUserCorrected`.
  */
-export const LOCKABLE_FIELDS = ["organisme", "title", "documentDate", "mainDeadline"] as const;
+export const LOCKABLE_FIELDS = [
+  "organisme",
+  "title",
+  "documentDate",
+  "mainDeadline",
+  "status",
+] as const;
 export type LockableField = (typeof LOCKABLE_FIELDS)[number];
+
+/**
+ * E5 US-5.1 — 6 statuts de pilotage du dossier (remplace le modèle à 4
+ * statuts D9). `"status"` fait partie de `LOCKABLE_FIELDS` : un changement
+ * manuel via `PATCH …/statut` protège le statut d'une ré-analyse.
+ */
+export const CaseStatusSchema = z.enum([
+  "A_ANALYSER",
+  "ACTION_REQUISE",
+  "DOCUMENTS_A_PREPARER",
+  "REPONSE_PRETE",
+  "EN_ATTENTE",
+  "TERMINE",
+]);
+export type CaseStatus = z.infer<typeof CaseStatusSchema>;
+
+export const UpdateCaseStatusInputSchema = z.object({ status: CaseStatusSchema });
+export type UpdateCaseStatusInput = z.infer<typeof UpdateCaseStatusInputSchema>;
 
 export const ResultInfoSchema = z.object({
   id: z.string().uuid(),
@@ -204,6 +228,7 @@ export type ResultDraft = z.infer<typeof ResultDraftSchema>;
 export const CaseFileResultResponseSchema = z.object({
   id: z.string().uuid(),
   analysisStatus: z.literal("TERMINEE"),
+  status: CaseStatusSchema,
   organisme: OrganismeIASchema,
   title: z.string(),
   documentDate: z.string().datetime().nullable(),
