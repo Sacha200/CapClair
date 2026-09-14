@@ -21,6 +21,8 @@ export const DOCUMENT_PATHS = {
 
 /** Chemins des endpoints de dossiers (préfixe `/api`, scope gardé — E3 + E4). */
 export const CASE_FILE_PATHS = {
+  // E5 US-5.4 — liste des dossiers + résumé (tableau de bord).
+  list: () => `/api/dossiers`,
   detail: (id: string) => `/api/dossiers/${id}`,
   consentAi: (id: string) => `/api/dossiers/${id}/consentement-ia`,
   analyze: (id: string) => `/api/dossiers/${id}/analyser`,

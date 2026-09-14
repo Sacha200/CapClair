@@ -328,3 +328,61 @@ export const CaseFileHistoryResponseSchema = z.object({
   entries: z.array(HistoryEntrySchema),
 });
 export type CaseFileHistoryResponse = z.infer<typeof CaseFileHistoryResponseSchema>;
+
+// ===========================================================================
+// E5 US-5.4 — Tableau de bord
+// ===========================================================================
+
+/**
+ * Résumé du tableau de bord (AC1) : compteurs + 5 dernières analyses +
+ * notifications récentes. Les compteurs ne portent que sur les dossiers actifs
+ * (`status !== "TERMINE"`), sauf mention contraire.
+ */
+export const DashboardSummarySchema = z.object({
+  activeCount: z.number().int(),
+  deadlineWithin7DaysCount: z.number().int(),
+  remainingActionsCount: z.number().int(),
+  recentAnalyses: z
+    .array(
+      z.object({
+        id: z.string().uuid(),
+        title: z.string(),
+        organisme: OrganismeIASchema,
+        analysisStatus: AnalysisStatusSchema,
+        analyzedAt: z.string().datetime().nullable(),
+      }),
+    )
+    .max(5),
+  recentNotifications: z.array(
+    z.object({
+      id: z.string().uuid(),
+      type: z.enum(["ANALYSE_TERMINEE", "ANALYSE_ECHEC", "RAPPEL", "SYSTEME"]),
+      title: z.string(),
+      body: z.string(),
+      read: z.boolean(),
+      createdAt: z.string().datetime(),
+    }),
+  ),
+});
+export type DashboardSummary = z.infer<typeof DashboardSummarySchema>;
+
+/** Une ligne de la liste des dossiers (tableau de bord). */
+export const CaseFileListItemSchema = z.object({
+  id: z.string().uuid(),
+  title: z.string(),
+  organisme: OrganismeIASchema,
+  status: CaseStatusSchema,
+  analysisStatus: AnalysisStatusSchema,
+  mainDeadline: z.string().datetime().nullable(),
+  actionsRemaining: z.number().int(),
+  actionsTotal: z.number().int(),
+  lastActivityAt: z.string().datetime(),
+});
+export type CaseFileListItem = z.infer<typeof CaseFileListItemSchema>;
+
+/** `GET /api/dossiers` — liste des dossiers du compte + résumé du tableau de bord. */
+export const CaseFileListResponseSchema = z.object({
+  cases: z.array(CaseFileListItemSchema),
+  summary: DashboardSummarySchema,
+});
+export type CaseFileListResponse = z.infer<typeof CaseFileListResponseSchema>;
