@@ -134,6 +134,30 @@ export async function recordAnalysisEvent(input: {
   });
 }
 
+/**
+ * US-5.4 (décision #7) — notifie l'utilisateur de l'issue d'une analyse
+ * (succès ou échec), à côté de `recordAnalysisEvent`. `body` ne porte JAMAIS
+ * de contenu de courrier — même contrainte que `AuditEvent` (US-8.2) : au plus
+ * le titre du dossier, jamais un extrait.
+ */
+export async function recordAnalysisNotification(input: {
+  caseFileId: string;
+  userId: string;
+  type: "ANALYSE_TERMINEE" | "ANALYSE_ECHEC";
+  title: string;
+  body: string;
+}): Promise<void> {
+  await prisma.notification.create({
+    data: {
+      userId: input.userId,
+      caseFileId: input.caseFileId,
+      type: input.type,
+      title: input.title,
+      body: input.body,
+    },
+  });
+}
+
 /** Transition d'état atomique (EN_COURS au démarrage, ECHEC sur exception). */
 export async function setAnalysisStatus(
   caseFileId: string,

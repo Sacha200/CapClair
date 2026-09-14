@@ -169,6 +169,50 @@ describe("runAnalysisJob", () => {
     expect(events[0]!.metadata).toEqual({ reason: "AnalysisValidationError" });
   });
 
+  it("US-5.4 (décision #7) — Notification ANALYSE_TERMINEE après un succès", async () => {
+    analyzeLetterMock.mockResolvedValue({ result: validResult() });
+    const { caseFileId, userId } = await seedCase();
+
+    await runAnalysisJob(caseFileId);
+
+    const notifications = await prisma.notification.findMany({ where: { caseFileId } });
+    expect(notifications).toHaveLength(1);
+    expect(notifications[0]).toMatchObject({
+      userId,
+      caseFileId,
+      type: "ANALYSE_TERMINEE",
+      read: false,
+    });
+
+    // Aucun contenu de courrier dans title/body (US-8.2, même gabarit que
+    // l'assertion négative sur les métadonnées d'AuditEvent ci-dessus).
+    const serialized = `${notifications[0]!.title} ${notifications[0]!.body}`;
+    for (const secret of [REF, EXCERPT, SUMMARY, "ci-joint"]) {
+      expect(serialized).not.toContain(secret);
+    }
+  });
+
+  it("US-5.4 (décision #7) — Notification ANALYSE_ECHEC après un échec", async () => {
+    analyzeLetterMock.mockResolvedValue({ result: null });
+    const { caseFileId, userId } = await seedCase();
+
+    await runAnalysisJob(caseFileId);
+
+    const notifications = await prisma.notification.findMany({ where: { caseFileId } });
+    expect(notifications).toHaveLength(1);
+    expect(notifications[0]).toMatchObject({
+      userId,
+      caseFileId,
+      type: "ANALYSE_ECHEC",
+      read: false,
+    });
+
+    const serialized = `${notifications[0]!.title} ${notifications[0]!.body}`;
+    for (const secret of [REF, EXCERPT, SUMMARY, "ci-joint"]) {
+      expect(serialized).not.toContain(secret);
+    }
+  });
+
   it("relance de validation : échec puis succès au 2ᵉ appel → TERMINEE", async () => {
     analyzeLetterMock
       .mockResolvedValueOnce({ result: null })

@@ -17,6 +17,7 @@ import {
   applyAnalysis,
   loadAnalysisContext,
   recordAnalysisEvent,
+  recordAnalysisNotification,
   setAnalysisStatus,
   type PersistableAnalysis,
   type ResolvedDeadline,
@@ -155,6 +156,15 @@ export async function runAnalysisJob(caseFileId: string): Promise<void> {
         ),
       },
     });
+    // US-5.4 (décision #7) — notifie l'utilisateur ; `body` = titre du dossier,
+    // jamais un extrait du courrier (même contrainte que l'AuditEvent ci-dessus).
+    await recordAnalysisNotification({
+      caseFileId,
+      userId,
+      type: "ANALYSE_TERMINEE",
+      title: "Analyse terminée",
+      body: persistable.title,
+    });
   } catch (err) {
     const reason = err instanceof Error ? err.name : "UnknownError";
     logger.error({ err, caseFileId }, "Échec de l'analyse");
@@ -166,5 +176,16 @@ export async function runAnalysisJob(caseFileId: string): Promise<void> {
       // `reason` = nom de classe d'erreur, jamais le message complet (US-8.2).
       metadata: { reason },
     });
+    // `userId` reste `null` si l'échec survient avant le chargement du contexte
+    // (dossier/document introuvable) : pas de notification possible dans ce cas.
+    if (userId) {
+      await recordAnalysisNotification({
+        caseFileId,
+        userId,
+        type: "ANALYSE_ECHEC",
+        title: "Analyse échouée",
+        body: "L'analyse de votre courrier n'a pas abouti. Vous pouvez la relancer.",
+      });
+    }
   }
 }
