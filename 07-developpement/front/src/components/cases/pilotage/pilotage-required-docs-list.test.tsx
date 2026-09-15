@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it } from "vitest";
 import { vi } from "vitest";
 import { makeRequiredDoc } from "@/components/cases/result.fixture";
+import { ApiError } from "@/lib/api/errors";
 
 const refresh = vi.fn();
 const updateRequiredDoc = vi.fn();
@@ -58,7 +59,7 @@ describe("PilotageRequiredDocsList (US-5.3)", () => {
     });
   });
 
-  it("échec réseau à la sauvegarde de la note → repli sur la note d'origine, pas de rejet non attrapé", async () => {
+  it("échec réseau à la sauvegarde de la note → repli sur la note d'origine, message d'erreur visible", async () => {
     updateRequiredDoc.mockRejectedValue(new Error("network error"));
     const doc = makeRequiredDoc({ id: "d1", name: "RIB", userNote: "Note initiale" });
     render(<PilotageRequiredDocsList caseFileId={CASE_ID} requiredDocuments={[doc]} />);
@@ -69,8 +70,28 @@ describe("PilotageRequiredDocsList (US-5.3)", () => {
 
     expect(updateRequiredDoc).toHaveBeenCalledWith(CASE_ID, "d1", { userNote: "Note modifiée" });
     // `save()` catche l'échec (comme `toggle()`) : repli sur la valeur d'origine,
-    // pas de propagation en rejet non attrapé.
+    // pas de propagation en rejet non attrapé, mais un message d'erreur visible.
     await waitFor(() => expect(noteField.value).toBe("Note initiale"));
+    expect(
+      await screen.findByText("La modification n'a pas abouti. Réessayez."),
+    ).toBeInTheDocument();
+    expect(refresh).not.toHaveBeenCalled();
+  });
+
+  it("échec PATCH (ex. 429) au cochage → message d'erreur visible, case repliée", async () => {
+    updateRequiredDoc.mockRejectedValue(
+      new ApiError(429, { error: "Trop de tentatives. Réessayez dans 1 minute." }),
+    );
+    const doc = makeRequiredDoc({ id: "d1", name: "RIB", provided: false });
+    render(<PilotageRequiredDocsList caseFileId={CASE_ID} requiredDocuments={[doc]} />);
+
+    const checkbox = screen.getByRole("checkbox", { name: "RIB" });
+    fireEvent.click(checkbox);
+
+    expect(
+      await screen.findByText("Trop de tentatives. Réessayez dans 1 minute."),
+    ).toBeInTheDocument();
+    await waitFor(() => expect(checkbox).not.toBeChecked());
     expect(refresh).not.toHaveBeenCalled();
   });
 

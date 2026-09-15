@@ -1,6 +1,7 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { makeAction } from "@/components/cases/result.fixture";
+import { ApiError } from "@/lib/api/errors";
 
 const refresh = vi.fn();
 const toggleAction = vi.fn();
@@ -77,5 +78,22 @@ describe("PilotageActionsList (US-5.2)", () => {
     });
     render(<PilotageActionsList caseFileId={CASE_ID} actions={[action]} />);
     expect(screen.getByText(/voir l'extrait/i)).toBeInTheDocument();
+  });
+
+  it("échec PATCH (ex. 429) au cochage → message d'erreur visible, case repliée", async () => {
+    toggleAction.mockRejectedValue(
+      new ApiError(429, { error: "Trop de tentatives. Réessayez dans 1 minute." }),
+    );
+    const action = makeAction({ id: "a1", title: "Envoyer le RIB", done: false });
+    render(<PilotageActionsList caseFileId={CASE_ID} actions={[action]} />);
+
+    const checkbox = screen.getByRole("checkbox", { name: "Envoyer le RIB" });
+    fireEvent.click(checkbox);
+
+    expect(
+      await screen.findByText("Trop de tentatives. Réessayez dans 1 minute."),
+    ).toBeInTheDocument();
+    await waitFor(() => expect(checkbox).not.toBeChecked());
+    expect(refresh).not.toHaveBeenCalled();
   });
 });

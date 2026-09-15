@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { ResultAction } from "@capclair/contract";
+import { ApiError } from "@/lib/api/errors";
 import { toggleAction } from "@/lib/api/cases";
 import { CheckboxField } from "@/components/ui/checkbox-field";
 import { SourceExcerptDisclosure } from "@/components/cases/source-excerpt-disclosure";
@@ -28,6 +29,7 @@ export function PilotageActionsList({
 }) {
   const router = useRouter();
   const [items, setItems] = useState(actions);
+  const [error, setError] = useState<string | null>(null);
   // Resynchronise l'état local optimiste quand le server component re-fetch
   // (après un `router.refresh()`, y compris déclenché par un autre composant —
   // ajout/suppression d'action, changement de statut). Ajustement pendant le
@@ -45,16 +47,21 @@ export function PilotageActionsList({
 
   function toggle(action: ResultAction) {
     const nextDone = !action.done;
+    setError(null);
     setItems((prev) =>
       prev.map((a) => (a.id === action.id ? { ...a, done: nextDone } : a)),
     );
     void toggleAction(caseFileId, action.id, { done: nextDone })
       .then(() => router.refresh())
-      .catch(() => {
-        // Repli sur l'état serveur au prochain rendu — pas de message d'erreur
-        // dédié ici (aucune AC US-5.2 ne le demande pour le cochage).
+      .catch((err: unknown) => {
+        // Repli sur l'état serveur (la case revient en arrière) + message
+        // d'erreur inline : la route est limitée (`RATE_LIMITS.analysis`,
+        // 10/minute) et un usage normal de la checklist peut l'atteindre.
         setItems((prev) =>
           prev.map((a) => (a.id === action.id ? { ...a, done: action.done } : a)),
+        );
+        setError(
+          err instanceof ApiError ? err.message : "La modification n'a pas abouti. Réessayez.",
         );
       });
   }
@@ -64,6 +71,7 @@ export function PilotageActionsList({
       <p className="text-sm font-medium text-text-strong">
         {total > 0 ? `${done}/${total} terminées (${percent} %)` : "0/0 terminées"}
       </p>
+      {error ? <p className="text-xs font-medium text-error">{error}</p> : null}
 
       {items.length === 0 ? (
         <p className="text-sm text-text-muted">Aucune action pour ce dossier.</p>

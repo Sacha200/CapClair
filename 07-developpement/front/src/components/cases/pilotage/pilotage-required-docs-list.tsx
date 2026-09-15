@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { ResultRequiredDoc } from "@capclair/contract";
+import { ApiError } from "@/lib/api/errors";
 import { updateRequiredDoc } from "@/lib/api/cases";
 import { CheckboxField } from "@/components/ui/checkbox-field";
 import { TextField } from "@/components/ui/text-field";
@@ -29,6 +30,7 @@ export function PilotageRequiredDocsList({
 }) {
   const router = useRouter();
   const [items, setItems] = useState(requiredDocuments);
+  const [error, setError] = useState<string | null>(null);
   // Même gabarit que `PilotageActionsList` : resynchronise l'état local
   // optimiste quand le server component re-fetch (après un `router.refresh()`
   // déclenché par ce composant ou un autre, ex. changement de statut).
@@ -43,16 +45,21 @@ export function PilotageRequiredDocsList({
 
   function toggle(doc: ResultRequiredDoc) {
     const nextProvided = !doc.provided;
+    setError(null);
     setItems((prev) =>
       prev.map((d) => (d.id === doc.id ? { ...d, provided: nextProvided } : d)),
     );
     void updateRequiredDoc(caseFileId, doc.id, { provided: nextProvided })
       .then(() => router.refresh())
-      .catch(() => {
-        // Repli sur l'état serveur au prochain rendu — pas de message d'erreur
-        // dédié ici (aucune AC US-5.3 ne le demande pour le cochage).
+      .catch((err: unknown) => {
+        // Repli sur l'état serveur (la case revient en arrière) + message
+        // d'erreur inline : la route est limitée (`RATE_LIMITS.analysis`,
+        // 10/minute) et un usage normal de la checklist peut l'atteindre.
         setItems((prev) =>
           prev.map((d) => (d.id === doc.id ? { ...d, provided: doc.provided } : d)),
+        );
+        setError(
+          err instanceof ApiError ? err.message : "La modification n'a pas abouti. Réessayez.",
         );
       });
   }
@@ -62,6 +69,7 @@ export function PilotageRequiredDocsList({
       <p className="text-sm font-medium text-text-strong">
         {done} sur {total} justificatifs prêts
       </p>
+      {error ? <p className="text-xs font-medium text-error">{error}</p> : null}
 
       {items.length === 0 ? (
         <p className="text-sm text-text-muted">Aucun justificatif pour ce dossier.</p>
@@ -104,18 +112,22 @@ function RequiredDocNoteForm({
     setNote(doc.userNote ?? "");
   }
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function save() {
     const trimmed = note.trim();
     setBusy(true);
+    setError(null);
     try {
       await updateRequiredDoc(caseFileId, doc.id, { userNote: trimmed === "" ? null : trimmed });
       router.refresh();
-    } catch {
-      // Repli sur la note d'origine — pas de message d'erreur dédié ici
-      // (aucune AC US-5.3 ne le demande pour la note), même esprit que le
-      // rattrapage de `toggle()` ci-dessus.
+    } catch (err) {
+      // Repli sur la note d'origine + message d'erreur inline : même esprit
+      // que le rattrapage de `toggle()` ci-dessus (route limitée en débit).
       setNote(doc.userNote ?? "");
+      setError(
+        err instanceof ApiError ? err.message : "La modification n'a pas abouti. Réessayez.",
+      );
     } finally {
       setBusy(false);
     }
@@ -123,21 +135,24 @@ function RequiredDocNoteForm({
 
   return (
     <form
-      className="mt-2 flex items-end gap-2"
+      className="mt-2 flex flex-col gap-1.5"
       onSubmit={(event) => {
         event.preventDefault();
         void save();
       }}
     >
-      <TextField
-        label="Note"
-        value={note}
-        disabled={busy}
-        onChange={(event) => setNote(event.target.value)}
-      />
-      <Button type="submit" variant="secondary" fullWidth={false} disabled={busy}>
-        {busy ? "Enregistrement…" : "Enregistrer"}
-      </Button>
+      <div className="flex items-end gap-2">
+        <TextField
+          label="Note"
+          value={note}
+          disabled={busy}
+          onChange={(event) => setNote(event.target.value)}
+        />
+        <Button type="submit" variant="secondary" fullWidth={false} disabled={busy}>
+          {busy ? "Enregistrement…" : "Enregistrer"}
+        </Button>
+      </div>
+      {error ? <p className="text-xs font-medium text-error">{error}</p> : null}
     </form>
   );
 }
