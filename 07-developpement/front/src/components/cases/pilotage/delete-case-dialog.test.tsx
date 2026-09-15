@@ -20,17 +20,17 @@ describe("DeleteCaseDialog (US-5.5)", () => {
     deleteCase.mockReset().mockResolvedValue({ ok: true });
   });
 
-  it("état par défaut : bouton « Supprimer ce dossier » visible, aucun panneau, aucun appel API", () => {
+  it("état par défaut : bouton « Supprimer définitivement » visible, aucun panneau, aucun appel API", () => {
     render(<DeleteCaseDialog caseFileId={CASE_ID} />);
 
-    expect(screen.getByRole("button", { name: "Supprimer ce dossier" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Supprimer définitivement" })).toBeInTheDocument();
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
     expect(deleteCase).not.toHaveBeenCalled();
   });
 
   it("premier clic affiche le panneau de confirmation avec le texte d'irréversibilité, aucun appel API", () => {
     render(<DeleteCaseDialog caseFileId={CASE_ID} />);
-    fireEvent.click(screen.getByRole("button", { name: "Supprimer ce dossier" }));
+    fireEvent.click(screen.getByRole("button", { name: "Supprimer définitivement" }));
 
     const alert = screen.getByRole("alert");
     expect(alert).toHaveTextContent("définitive");
@@ -44,7 +44,7 @@ describe("DeleteCaseDialog (US-5.5)", () => {
 
   it("clic « Confirmer la suppression » → deleteCase appelé, puis redirection vers /dashboard", async () => {
     render(<DeleteCaseDialog caseFileId={CASE_ID} />);
-    fireEvent.click(screen.getByRole("button", { name: "Supprimer ce dossier" }));
+    fireEvent.click(screen.getByRole("button", { name: "Supprimer définitivement" }));
     fireEvent.click(screen.getByRole("button", { name: "Confirmer la suppression" }));
 
     await waitFor(() => expect(deleteCase).toHaveBeenCalledWith(CASE_ID));
@@ -56,7 +56,7 @@ describe("DeleteCaseDialog (US-5.5)", () => {
       new ApiError(500, { error: "La suppression n'a pas abouti. Réessayez." }),
     );
     render(<DeleteCaseDialog caseFileId={CASE_ID} />);
-    fireEvent.click(screen.getByRole("button", { name: "Supprimer ce dossier" }));
+    fireEvent.click(screen.getByRole("button", { name: "Supprimer définitivement" }));
     fireEvent.click(screen.getByRole("button", { name: "Confirmer la suppression" }));
 
     await waitFor(() => expect(deleteCase).toHaveBeenCalledWith(CASE_ID));
@@ -68,18 +68,18 @@ describe("DeleteCaseDialog (US-5.5)", () => {
 
   it("premier clic → le focus est renvoyé sur le bouton « Annuler » (plan §6.6)", () => {
     render(<DeleteCaseDialog caseFileId={CASE_ID} />);
-    fireEvent.click(screen.getByRole("button", { name: "Supprimer ce dossier" }));
+    fireEvent.click(screen.getByRole("button", { name: "Supprimer définitivement" }));
 
     expect(screen.getByRole("button", { name: "Annuler" })).toHaveFocus();
   });
 
   it("clic « Annuler » → aucun appel API, retour à l'état par défaut", () => {
     render(<DeleteCaseDialog caseFileId={CASE_ID} />);
-    fireEvent.click(screen.getByRole("button", { name: "Supprimer ce dossier" }));
+    fireEvent.click(screen.getByRole("button", { name: "Supprimer définitivement" }));
     fireEvent.click(screen.getByRole("button", { name: "Annuler" }));
 
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Supprimer ce dossier" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Supprimer définitivement" })).toBeInTheDocument();
     expect(deleteCase).not.toHaveBeenCalled();
   });
 });

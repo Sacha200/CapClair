@@ -84,7 +84,11 @@ export function PilotageActionsList({
             >
               <div className="flex items-start justify-between gap-2.5">
                 <CheckboxField
-                  label={action.title}
+                  label={
+                    <span className={action.done ? "line-through text-text-muted" : undefined}>
+                      {action.title}
+                    </span>
+                  }
                   checked={action.done}
                   onChange={() => toggle(action)}
                 />

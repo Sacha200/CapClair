@@ -80,6 +80,20 @@ describe("PilotageActionsList (US-5.2)", () => {
     expect(screen.getByText(/voir l'extrait/i)).toBeInTheDocument();
   });
 
+  it("action cochée (done=true) → titre barré et atténué (revue fidélité Figma)", () => {
+    const action = makeAction({ id: "a1", title: "Envoyer le RIB", done: true });
+    render(<PilotageActionsList caseFileId={CASE_ID} actions={[action]} />);
+
+    expect(screen.getByText("Envoyer le RIB")).toHaveClass("line-through", "text-text-muted");
+  });
+
+  it("action non cochée (done=false) → titre sans décoration", () => {
+    const action = makeAction({ id: "a1", title: "Envoyer le RIB", done: false });
+    render(<PilotageActionsList caseFileId={CASE_ID} actions={[action]} />);
+
+    expect(screen.getByText("Envoyer le RIB")).not.toHaveClass("line-through");
+  });
+
   it("échec PATCH (ex. 429) au cochage → message d'erreur visible, case repliée", async () => {
     toggleAction.mockRejectedValue(
       new ApiError(429, { error: "Trop de tentatives. Réessayez dans 1 minute." }),

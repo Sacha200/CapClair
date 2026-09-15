@@ -59,9 +59,9 @@ export function DeleteCaseDialog({ caseFileId }: { caseFileId: string }) {
         <button
           type="button"
           onClick={() => setConfirming(true)}
-          className="text-sm font-semibold text-error hover:underline"
+          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-[var(--radius-button)] border border-error bg-bg-surface px-4 text-sm font-semibold text-error transition-colors hover:bg-error-light"
         >
-          Supprimer ce dossier
+          Supprimer définitivement
         </button>
       </div>
     );

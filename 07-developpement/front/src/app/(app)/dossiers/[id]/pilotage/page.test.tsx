@@ -36,7 +36,7 @@ describe("PilotagePage — écran 06 (amorce)", () => {
     getCaseResult.mockResolvedValue(makeResult());
     render(await PilotagePage({ params }));
     expect(
-      screen.getByRole("heading", { level: 1, name: "Pilotage du dossier" }),
+      screen.getByRole("heading", { level: 1, name: "Demande de justificatifs" }),
     ).toBeInTheDocument();
     expect(screen.queryByTestId("waiting")).not.toBeInTheDocument();
   });
