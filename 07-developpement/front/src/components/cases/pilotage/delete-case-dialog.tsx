@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ANALYSIS_MESSAGES } from "@capclair/contract";
 import { ApiError } from "@/lib/api/errors";
@@ -23,6 +23,17 @@ export function DeleteCaseDialog({ caseFileId }: { caseFileId: string }) {
   const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const cancelButtonRef = useRef<HTMLButtonElement>(null);
+
+  // Plan §6.6 — le focus doit être renvoyé sur "Annuler" à l'ouverture du
+  // panneau de confirmation, pour un utilisateur clavier/lecteur d'écran qui
+  // ne verrait sinon jamais le message d'irréversibilité (`role="alert"`)
+  // sans retraverser toute la page.
+  useEffect(() => {
+    if (confirming) {
+      cancelButtonRef.current?.focus();
+    }
+  }, [confirming]);
 
   async function confirm() {
     setBusy(true);
@@ -73,6 +84,7 @@ export function DeleteCaseDialog({ caseFileId }: { caseFileId: string }) {
           {busy ? "Suppression…" : "Confirmer la suppression"}
         </button>
         <button
+          ref={cancelButtonRef}
           type="button"
           onClick={() => setConfirming(false)}
           disabled={busy}

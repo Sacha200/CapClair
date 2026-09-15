@@ -66,6 +66,13 @@ describe("DeleteCaseDialog (US-5.5)", () => {
     expect(push).not.toHaveBeenCalled();
   });
 
+  it("premier clic → le focus est renvoyé sur le bouton « Annuler » (plan §6.6)", () => {
+    render(<DeleteCaseDialog caseFileId={CASE_ID} />);
+    fireEvent.click(screen.getByRole("button", { name: "Supprimer ce dossier" }));
+
+    expect(screen.getByRole("button", { name: "Annuler" })).toHaveFocus();
+  });
+
   it("clic « Annuler » → aucun appel API, retour à l'état par défaut", () => {
     render(<DeleteCaseDialog caseFileId={CASE_ID} />);
     fireEvent.click(screen.getByRole("button", { name: "Supprimer ce dossier" }));
