@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { ApiError } from "@/lib/api/errors";
 
 const refresh = vi.fn();
 const deleteAction = vi.fn();
@@ -44,5 +45,22 @@ describe("ActionDeleteButton (US-5.2 AC3)", () => {
 
     expect(screen.queryByText("Confirmer ?")).not.toBeInTheDocument();
     expect(deleteAction).not.toHaveBeenCalled();
+  });
+
+  it("échec de deleteAction → message d'erreur visible, confirmation conservée", async () => {
+    deleteAction.mockRejectedValue(
+      new ApiError(429, { error: "Trop de tentatives. Réessayez dans 1 minute." }),
+    );
+    render(<ActionDeleteButton caseFileId={CASE_ID} actionId={ACTION_ID} />);
+    fireEvent.click(screen.getByRole("button", { name: "Supprimer cette action" }));
+    fireEvent.click(screen.getByRole("button", { name: "Oui" }));
+
+    await waitFor(() => expect(deleteAction).toHaveBeenCalledWith(CASE_ID, ACTION_ID));
+    expect(
+      await screen.findByText("Trop de tentatives. Réessayez dans 1 minute."),
+    ).toBeInTheDocument();
+    // La confirmation reste affichée (pas de retour silencieux à l'état par défaut).
+    expect(screen.getByRole("button", { name: "Oui" })).toBeInTheDocument();
+    expect(refresh).not.toHaveBeenCalled();
   });
 });

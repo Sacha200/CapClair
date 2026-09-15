@@ -30,11 +30,14 @@ export function ActionDeleteButton({
       await deleteAction(caseFileId, actionId);
       router.refresh();
     } catch (err) {
+      // Le panneau de confirmation reste ouvert (`confirming` inchangé) :
+      // c'est la seule branche de rendu qui affiche le message d'erreur
+      // ci-dessous. Le repasser à `false` ferait disparaître l'échec sans
+      // aucun retour visuel.
       setError(
         err instanceof ApiError ? err.message : "La suppression n'a pas abouti. Réessayez.",
       );
       setBusy(false);
-      setConfirming(false);
     }
   }
 
