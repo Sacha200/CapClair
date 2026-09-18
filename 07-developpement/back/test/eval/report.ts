@@ -18,6 +18,21 @@ export interface PerLetter {
   informationsUngrounded: number;
   informationsTotal: number;
   latencyMs: number;
+  /**
+   * Extraits bruts compares, pour rendre un recall bas diagnosticable sans
+   * re-payer une execution : un attendu manque peut venir du modele comme
+   * d'un decoupage different dans le dataset.
+   *
+   * Le corpus etant fictif (05-courriers-fictifs), ces extraits peuvent etre
+   * commites. Avec de vrais courriers, US-8.2 l'interdirait : le rapport
+   * devrait alors rester local.
+   */
+  excerptsAudit: {
+    actionsExpected: string[];
+    actionsProduced: string[];
+    justificatifsExpected: string[];
+    justificatifsProduced: string[];
+  };
 }
 
 export interface EvalReport {

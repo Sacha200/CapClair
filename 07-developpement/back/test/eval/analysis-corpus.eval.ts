@@ -105,6 +105,12 @@ describe.skipIf(!existsSync(DATASET_PATH))("évaluation du corpus d'analyse", ()
           informationsUngrounded: 0,
           informationsTotal: 0,
           latencyMs,
+          excerptsAudit: {
+            actionsExpected: excerpts(entry.actions_attendues),
+            actionsProduced: [],
+            justificatifsExpected: excerpts(entry.justificatifs_attendus),
+            justificatifsProduced: [],
+          },
         });
         continue;
       }
@@ -148,6 +154,12 @@ describe.skipIf(!existsSync(DATASET_PATH))("évaluation du corpus d'analyse", ()
         ).length,
         informationsTotal: result.informationsExtraites.length,
         latencyMs,
+        excerptsAudit: {
+          actionsExpected: excerpts(entry.actions_attendues),
+          actionsProduced: result.actions.map((a) => a.sourceExcerpt),
+          justificatifsExpected: excerpts(entry.justificatifs_attendus),
+          justificatifsProduced: result.justificatifs.map((j) => j.sourceExcerpt),
+        },
       });
     }
 
