@@ -92,6 +92,12 @@ ne toucher la base qu'une fois le schéma à jour.
 
 ### Première mise en service sur un serveur
 
+Procédure détaillée, pas à pas, pour une VM cloud gratuite (Oracle Cloud
+Always Free, ARM64) : **[`deploiement-vm-gratuite.md`](deploiement-vm-gratuite.md)**.
+Les sections 4 à 7 de ce document valent pour n'importe quel hébergeur.
+
+En résumé :
+
 1. VPS (2 vCPU / 4 Go suffisent au volume MVP), Docker et le plugin Compose.
 2. Enregistrement DNS **A** du domaine vers l'IP du serveur, **avant** le
    premier démarrage : sans lui, Caddy ne peut pas obtenir son certificat.
