@@ -152,7 +152,19 @@ nano .env.prod          # PUBLIC_DOMAIN, POSTGRES_*, DATABASE_URL,
 ./deploy.sh
 ```
 
-Rappels tirés du gabarit :
+**Huit valeurs à renseigner, pas une de plus** : `PUBLIC_DOMAIN`, les trois
+`POSTGRES_*`, `DATABASE_URL`, `REDIS_URL`, `APP_BASE_URL` et
+`ANTHROPIC_API_KEY`. Tout le reste est commenté dans le gabarit et utilise le
+défaut de `back/src/env.ts`.
+
+> **Ne décommente une ligne que pour lui donner une vraie valeur.** Une variable
+> présente mais vide n'équivaut pas à une variable absente : `env_file` injecte
+> `FOO=` comme la chaîne vide, et les `.default()` de Zod ne s'appliquent qu'à
+> `undefined`. Le back sortirait en listant les erreurs et `deploy.sh` resterait
+> bloqué sur `up -d --wait`. La seule exception est `COOKIE_DOMAIN`, que
+> `env.ts` traite explicitement comme absente quand elle est vide.
+
+Autres rappels :
 
 - `DATABASE_URL` vise l'hôte **`db`** sur le port **5432** (réseau interne de
   Compose), jamais `localhost` ;
@@ -190,6 +202,8 @@ analyse, écran de résultat. C'est ce parcours-là qui coche l'étape 12 de T2.
 | Caddy boucle sur « obtaining certificate » | DNS pas encore propagé, ou 80 fermé (le défi ACME passe par 80) |
 | Le build est tué pendant `next build` | Pas assez de RAM. Avec 12 Go ce ne doit pas arriver ; sur une machine plus petite, ajouter du swap |
 | `Out of capacity` à la création | Forme A1 saturée ; réessayer plus tard ou changer de domaine de disponibilité |
+| Le back sort au démarrage en listant des « Number must be greater than 0 » | Des lignes ont été décommentées et laissées vides dans `.env.prod`. Les recommenter |
+| Connexion acceptée mais toute route protégée renvoie vers `/connexion` | Le front et le back ne cherchent pas le même cookie. `SESSION_COOKIE_NAME` doit être vu des deux services |
 | `permission denied` sur `./deploy.sh` | Bit exécutable perdu : `chmod +x deploy.sh` |
 | `./deploy.sh: bad interpreter` | Fins de ligne CRLF. `.gitattributes` l'empêche, mais vérifier que le clone est récent |
 

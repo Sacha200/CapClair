@@ -112,6 +112,13 @@ services:
       # Appels serveur→back sur le réseau interne. Les appels navigateur, eux,
       # sont routés par Caddy (/api/back/*) et ne passent pas par Next.
       BACK_ORIGIN: http://back:3001
+      # Le middleware Edge et la garde serveur du front cherchent ce cookie
+      # (front/src/lib/config.ts). Sans cette ligne, personnaliser
+      # SESSION_COOKIE_NAME dans .env.prod ne l'aurait donné qu'au back : le
+      # back aurait authentifié un cookie que le front ne regarde pas, et
+      # toute route protégée aurait renvoyé vers /connexion. Le `:-` garde le
+      # défaut quand la variable reste commentée dans .env.prod.
+      SESSION_COOKIE_NAME: ${SESSION_COOKIE_NAME:-capclair_session}
     depends_on:
       back: { condition: service_healthy }
     healthcheck:

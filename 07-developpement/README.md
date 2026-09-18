@@ -101,7 +101,12 @@ En résumé :
 1. VPS (2 vCPU / 4 Go suffisent au volume MVP), Docker et le plugin Compose.
 2. Enregistrement DNS **A** du domaine vers l'IP du serveur, **avant** le
    premier démarrage : sans lui, Caddy ne peut pas obtenir son certificat.
-3. Cloner le dépôt, puis `cp .env.prod.example .env.prod` et le renseigner.
+3. Cloner le dépôt, puis `cp .env.prod.example .env.prod` et renseigner les
+   **huit** variables de ses deux sections « OBLIGATOIRE ». Le reste est
+   commenté et utilise les défauts de `back/src/env.ts` : ne décommenter une
+   ligne que pour lui donner une vraie valeur, jamais pour la laisser vide —
+   `env_file` injecte `FOO=` comme chaîne vide, et un `.default()` Zod ne
+   s'applique qu'à `undefined`, donc le back refuserait de démarrer.
    `COOKIE_SECURE`, `TRUST_PROXY` et `RATE_LIMIT_REDIS` sont déjà forcés par le
    Compose : ne pas les contredire.
 4. `./deploy.sh`

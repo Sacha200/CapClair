@@ -555,6 +555,41 @@ Windows — une continuation `\` suivie de CRLF casse un `RUN`. Les deux sont
 désormais épinglés en LF dans `.gitattributes`, et `deploy.sh` est en `100755`
 faute de quoi `./deploy.sh` échoue sur le serveur.
 
-**Reste à faire (hors de cette décision).** Provisionner le VPS, poser
+**Deux pièges de configuration relevés en revue, corrigés et vérifiés.**
+
+*Une variable présente mais vide n'équivaut pas à une variable absente.*
+`env_file` de Compose injecte `FOO=` comme la chaîne vide, et les `.default()`
+de `env.ts` ne s'appliquent qu'à `undefined` : `z.string().min(1)` refuse `""`,
+`z.coerce.number()` transforme `""` en `0` qui échoue `.positive()`, et un
+`z.enum` refuse `""`. Le premier `.env.prod.example` listait toutes les
+variables en clair et vides, sur le modèle de `back/.env.example` — un
+opérateur suivant le runbook n'aurait renseigné que les valeurs nommées, et le
+back serait sorti sur **23 erreurs de validation**, laissant `deploy.sh` bloqué
+sur `up -d --wait`. Reproduit dans le conteneur, puis corrigé : le gabarit
+distingue désormais huit variables obligatoires en clair (`PUBLIC_DOMAIN`, les
+trois `POSTGRES_*`, `DATABASE_URL`, `REDIS_URL`, `APP_BASE_URL`,
+`ANTHROPIC_API_KEY`) de tout le reste, **commenté** avec son défaut réel.
+`COOKIE_DOMAIN` est la seule exception : `env.ts` la fait passer par son
+préprocesseur `optional()`, qui traite le vide comme l'absence. Vérifié en
+repartant du gabarit : la pile démarre saine avec huit valeurs renseignées.
+
+*`SESSION_COOKIE_NAME` n'était donné qu'au back.* Le front résout ce nom par
+`process.env.SESSION_COOKIE_NAME ?? "capclair_session"`
+(`front/src/lib/config.ts`), et c'est ce nom que testent le middleware Edge et
+la garde serveur. Le service `front` du Compose ne recevait pas la variable :
+personnaliser le nom du cookie aurait donné un back authentifiant un cookie que
+le front ne regarde pas, donc une connexion réussie suivie d'une redirection
+vers `/connexion` sur toute route protégée. Le service `front` reçoit désormais
+`SESSION_COOKIE_NAME: ${SESSION_COOKIE_NAME:-capclair_session}`.
+
+Vérifié au passage, contre l'intuition : le runtime Edge du middleware **lit
+bien** l'environnement du conteneur, il ne fige pas la valeur au build. Testé en
+démarrant l'image du front avec un nom de cookie personnalisé — le middleware
+reconnaît ce cookie et laisse passer la requête. Le défaut ne venait donc pas
+d'une inlining au build, mais de la variable absente du service. Bout en bout
+avec `SESSION_COOKIE_NAME=capclair_prod_session` : connexion 200, cookie
+`capclair_prod_session` posé, `GET /dashboard` 200 sans redirection.
+
+**Reste à faire (hors de cette décision).** Provisionner le serveur, poser
 l'enregistrement DNS, dérouler le parcours complet sur le domaine public. Les
 sauvegardes, le durcissement du serveur et le CD restent dans E10.
