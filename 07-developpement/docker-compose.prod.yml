@@ -1,0 +1,158 @@
+# ============================================================================
+# CapClair — pile de production (audit T2, décision #5 : VPS + Compose + Caddy)
+# ----------------------------------------------------------------------------
+#   Usage : ./deploy.sh  (depuis 07-developpement/, sur le serveur)
+#   Manuel : docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --wait
+#
+# Différences clefs avec back/docker-compose.yml (développement) :
+#   - aucun port de base de données ni de Redis exposé sur l'hôte ;
+#   - seul `caddy` publie des ports (80/443) ;
+#   - TRUST_PROXY=true : le back est derrière Caddy, sinon le rate limit voit
+#     une seule IP pour tout le monde ;
+#   - COOKIE_SECURE=true et RATE_LIMIT_REDIS=true.
+#
+# Le nom de projet diffère de celui du dev (« db ») pour que les deux piles
+# puissent coexister sur une même machine sans se voler conteneurs et volumes.
+# ============================================================================
+
+name: capclair
+
+services:
+  db:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      # Même provider ICU qu'en développement : tri correct des accents.
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale-provider=icu --icu-locale=fr-FR"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    # Aucun `ports:` — la base n'est joignable que sur le réseau interne.
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+
+  back:
+    build:
+      context: .
+      dockerfile: back/Dockerfile
+    restart: unless-stopped
+    env_file: .env.prod
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      TRUST_PROXY: "true"
+      COOKIE_SECURE: "true"
+      RATE_LIMIT_REDIS: "true"
+    depends_on:
+      db: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    volumes:
+      - storage:/app/back/storage
+    # Migrations appliquées au démarrage : une seule instance, pas de course.
+    command: sh -c "npx prisma migrate deploy && node dist/index.js"
+    # L'image n'embarque ni curl ni wget : la sonde passe par le fetch global
+    # de Node 20. Sans healthcheck, `up -d --wait` ne garantirait que « démarré ».
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3001/api/sante').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 40s
+
+  worker:
+    build:
+      context: .
+      dockerfile: back/Dockerfile
+    restart: unless-stopped
+    env_file: .env.prod
+    environment:
+      NODE_ENV: production
+    depends_on:
+      db: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      # `service_healthy` et non `service_started` : le worker ne doit toucher la
+      # base qu'une fois les migrations du service back appliquées.
+      back: { condition: service_healthy }
+    volumes:
+      - storage:/app/back/storage
+    command: ["node", "dist/worker/index.js"]
+
+  front:
+    build:
+      context: .
+      dockerfile: front/Dockerfile
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      # Appels serveur→back sur le réseau interne. Les appels navigateur, eux,
+      # sont routés par Caddy (/api/back/*) et ne passent pas par Next.
+      BACK_ORIGIN: http://back:3001
+      # Le middleware Edge et la garde serveur du front cherchent ce cookie
+      # (front/src/lib/config.ts). Sans cette ligne, personnaliser
+      # SESSION_COOKIE_NAME dans .env.prod ne l'aurait donné qu'au back : le
+      # back aurait authentifié un cookie que le front ne regarde pas, et
+      # toute route protégée aurait renvoyé vers /connexion. Le `:-` garde le
+      # défaut quand la variable reste commentée dans .env.prod.
+      SESSION_COOKIE_NAME: ${SESSION_COOKIE_NAME:-capclair_session}
+    depends_on:
+      back: { condition: service_healthy }
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000/cgu').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      PUBLIC_DOMAIN: ${PUBLIC_DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddydata:/data
+      - caddyconfig:/config
+    depends_on:
+      front: { condition: service_healthy }
+      back: { condition: service_healthy }
+
+volumes:
+  pgdata:
+  redisdata:
+  storage:
+  caddydata:
+  caddyconfig:

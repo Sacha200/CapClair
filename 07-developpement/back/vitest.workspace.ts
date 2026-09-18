@@ -24,7 +24,9 @@ export default defineWorkspace([
   {
     test: {
       name: "unit",
-      include: ["src/**/*.test.ts"],
+      // `test/eval/**` : les tests du harnais d'évaluation lui-même (audit T1),
+      // gratuits et sans réseau. Le harnais facturé est en `*.eval.ts`, projet `eval`.
+      include: ["src/**/*.test.ts", "test/eval/**/*.test.ts"],
       environment: "node",
       env: unitEnv,
     },
@@ -37,6 +39,18 @@ export default defineWorkspace([
       globalSetup: ["test/setup.ts"],
       hookTimeout: 60_000,
       testTimeout: 20_000,
+    },
+  },
+  {
+    test: {
+      // Harnais de mesure de la qualite IA (audit T1). DECLENCHE DE VRAIS
+      // APPELS FACTURES : jamais dans `npm test`, `npm run test:int` ni
+      // `npm run test:all`, jamais en CI. Uniquement `npm run eval:corpus`.
+      name: "eval",
+      include: ["test/eval/**/*.eval.ts"],
+      environment: "node",
+      testTimeout: 15 * 60_000,
+      hookTimeout: 60_000,
     },
   },
 ]);

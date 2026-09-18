@@ -93,6 +93,12 @@ Une page en ligne en HTTPS est attendue **dès le 2 août**, avant tout dévelop
 - Catégories d'information en référentiel seedé — table `Category`, `code` stable (D14)
 - Conservation des dossiers 12 mois puis purge automatique (D12)
 - 4 statuts de dossier, réduits de 6 après tests, et signal de confiance renforcé — D9 et D10 validés au retest
+- **Qualité d'analyse IA mesurée, pas supposée** — sur les 15 courriers fictifs, au 18 septembre 2026
+  avec `claude-sonnet-5` : schéma respecté 100 %, organisme 100 %, date du courrier 100 %,
+  rappel des actions 92,9 %, rappel des justificatifs 100 %, et **0 % d'extrait non ancré dans le
+  courrier source** — aucune information inventée. Harnais rejouable par
+  `npm run eval:corpus`, rapport daté dans `07-developpement/plans/eval-reports/`, méthode et
+  limites dans l'ADR-017.
 
 **Registre des 17 décisions clos** dans `01-cadrage/03-incoherences-et-arbitrages.md`, section F.
 

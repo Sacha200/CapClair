@@ -1,0 +1,20 @@
+# Contexte de build = 07-developpement/. Sans ce fichier, le contexte embarque
+# node_modules, les 695 Mo de .next, le volume storage/ et les 217 Mo de profil
+# Chrome de .claude/skills/run-capclair/.run/.
+**/node_modules
+**/.next
+**/dist
+**/coverage
+**/.env
+**/.env.*
+!**/.env.example
+back/storage
+.claude
+.git
+**/*.log
+
+# Jamais utile dans une image : tests, harnais d'evaluation et rapports.
+back/test
+front/src/**/*.test.ts
+front/src/**/*.test.tsx
+plans

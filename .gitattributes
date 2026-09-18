@@ -22,6 +22,11 @@
 
 # ---- Toujours en LF, y compris sous Windows ----
 *.sh        text eol=lf
+# Sans extension, ces fichiers tomberaient sous `* text=auto` et seraient
+# livrés en CRLF sur un poste Windows. Or ils sont lus par des outils Linux :
+# une continuation `\` suivie de CRLF casse un RUN de Dockerfile (audit T2).
+Dockerfile  text eol=lf
+Caddyfile   text eol=lf
 *.prisma    text eol=lf
 *.ts        text eol=lf
 *.tsx       text eol=lf

@@ -402,3 +402,194 @@ toucherait que ce module.
 (`documents.corpus.test.ts`) : texte intégral extrait, largement sous le budget
 de 5 s par courrier. L'avertissement `standardFontDataUrl` de PDF.js est
 inoffensif sur ce chemin (métriques de polices standard, texte déjà extrait).
+
+---
+
+## ADR-017 — Harnais d'évaluation du corpus IA
+
+**Date** : sprint de consolidation technique (audit du 16 septembre 2026, tâche T1).
+**Statut** : acté.
+
+**Contexte.** Le différenciateur produit de CapClair est la fiabilité de
+l'analyse, et elle n'était mesurée nulle part. `documents.corpus.test.ts` ne
+vérifiait que l'extraction PDF ; `05-courriers-fictifs/dataset-reference.json`
+(15 entrées, vérité terrain rédigée à la main) n'était exploité par aucun test.
+Le seul composant faillible du système n'avait donc aucun chiffre.
+
+**Décision.**
+
+1. **Emplacement.** `back/test/eval/`, projet Vitest **`eval`** distinct,
+   extension `*.eval.ts`. Ni `npm test`, ni `npm run test:int`, ni
+   `npm run test:all`, ni la CI ne le ramassent : seul `npm run eval:corpus` le
+   déclenche. `test:all` valait `vitest run` sans sélection de projet et aurait
+   donc lancé des appels facturés ; il cible désormais `unit` et `integration`
+   explicitement.
+2. **Périmètre mesuré.** `analyzeLetter()` en direct sur le texte extrait par
+   `server/pdf` — pas le parcours HTTP complet. Un écart mesuré ici désigne le
+   prompt ou le modèle, jamais le câblage.
+3. **Définition d'« invention ».** Deux métriques distinctes, jamais fusionnées :
+   **non ancré** (`sourceExcerpt` absent du texte source — défaut objectif, ne
+   dépend d'aucun appariement) et **hors référentiel** (ancré mais sans
+   correspondance au dataset — informatif, le dataset pouvant être incomplet).
+4. **Seuils.** Première exécution = référence, aucun seuil de régression. Les
+   seuils seront fixés à partir des chiffres réels.
+5. **Critère d'appariement — amendé en cours d'exécution.** Le plan posait
+   « l'extrait, jamais le titre ». Vérifié sur CAF-01 : le dataset ancre la
+   consigne sur la phrase qui liste les documents, le modèle sur celle qui donne
+   le délai et le canal. Les deux extraits sont ancrés, aucun n'a tort, et
+   l'appariement par extrait échoue — rappel actions 0 % alors que l'action est
+   correctement trouvée. Le critère par extrait est objectif pour un
+   **justificatif** (un document nommé n'apparaît qu'une fois) mais pas pour une
+   **action**. Les actions passent donc par un appariement en deux passes
+   (extrait, puis recouvrement de mots significatifs entre titres) et **deux
+   rappels sont publiés** : `actionRecall` strict et `actionRecallLenient`
+   souple. Aucune entrée du dataset n'a été modifiée — la vérité terrain reste
+   indépendante de ce que le modèle produit.
+
+**Chiffre de référence — `claude-sonnet-5`, 15 courriers, 18 septembre 2026.**
+
+| Métrique | Valeur |
+|---|---|
+| Réponses conformes à `AnalysisResultSchema` | **100 %** (15/15) |
+| Organisme correct | **100 %** (15/15) |
+| Date du courrier correcte | **100 %** (15/15) |
+| Rappel actions | **92,9 %** (13/14, strict comme souple) |
+| Rappel justificatifs | **100 %** (13/13) |
+| Extraits non ancrés (actions, justificatifs, informations) | **0 %** |
+| Latence médiane d'un appel | **17,2 s** (11,9 s à 22,0 s) |
+
+**Conséquences.** Aucun extrait inventé sur les 15 courriers : la contrainte
+anti-hallucination du produit (US-3.2 AC5, US-4.2 AC2) tient sur le corpus.
+La table d'interprétation du plan (rappel ≥ 90 %, non ancré ≤ 2 %, schéma
+100 %) classe ce résultat en « le pipeline tient, continuer le plan tel quel » :
+ni le chantier prompt ni le repli Opus 5 (plan E3 §9.5) ne sont ouverts.
+
+Le seul écart de rappel est CAF-01, où le modèle a bien produit l'action mais
+l'a intitulée par son canal (« Envoyer les documents manquants via caf.fr ou par
+courrier postal ») là où le dataset l'intitule par ses pièces (« Envoyer le
+justificatif de domicile et l'avis d'imposition »). Les deux titres ne partagent
+qu'un mot significatif, le repli ne déclenche pas. Le rappel réel est donc
+vraisemblablement de 100 % ; **92,9 % est un plancher**, et c'est le chiffre
+publié.
+
+Le rapport daté est commité en `07-developpement/plans/eval-reports/` (JSON
+complet + résumé Markdown), avec les extraits et titres comparés courrier par
+courrier pour qu'un rappel bas soit diagnosticable sans re-payer une exécution.
+Le corpus étant fictif, ces extraits peuvent être commités ; avec de vrais
+courriers, US-8.2 l'interdirait et le rapport devrait rester local.
+
+Coût constaté : 15 appels Sonnet à `max_tokens: 4096`, environ 4 minutes
+d'exécution.
+
+---
+
+## ADR-018 — Déploiement : VPS + Docker Compose + Caddy, mise en service manuelle
+
+**Date** : sprint de consolidation technique (audit du 16 septembre 2026, tâche T2).
+**Statut** : acté ; pile validée en local, mise en service serveur à faire.
+
+**Contexte.** Rien n'était déployé : aucun Dockerfile applicatif, pas de
+reverse-proxy, pas de CD. L'URL HTTPS était due le 2 août. C'est l'écart le plus
+visible entre le plan et le réel, parce qu'il se vérifie en un clic.
+
+**Décision.**
+
+1. **Cible : VPS + Docker Compose + Caddy.** Caddy gère le TLS automatiquement et
+   sait router par chemin sur une origine unique, ce qu'exige ADR-005. Écarté :
+   un PaaS (Railway, Render), plus rapide mais qui masque l'exploitation ; et
+   Kubernetes, surdimensionné pour deux process et `concurrency: 1`. Scalingo
+   (hébergeur français annonçant une certification HDS) ne devient pertinent
+   qu'au passage aux vrais courriers, où l'article 9 du RGPD s'applique.
+2. **Une seule image pour le back et le worker**, seule la commande diffère. Même
+   code, même `node_modules`, une surface de build au lieu de deux.
+3. **Pas de CD automatique ce sprint** (décision de cadrage existante).
+   `deploy.sh` fait `git pull --ff-only`, build, `up -d --wait`, puis sonde
+   `https://<domaine>/api/sante`. Le CD reste en roadmap E10.
+4. **Migrations au démarrage du service `back`** (`prisma migrate deploy` avant
+   de servir). Une seule instance, donc pas de course. Le `worker` attend que le
+   `back` soit *healthy* : il ne touche la base qu'une fois le schéma à jour.
+5. **`node_modules` complet dans l'image de runtime**, dépendances de
+   développement comprises. C'est un choix, pas un oubli : `migrate deploy`
+   exige la CLI `prisma` (devDependency) et le chargeur TypeScript qu'elle
+   embarque pour lire `prisma.config.ts`. Un `npm prune --production` casserait
+   les migrations au démarrage.
+
+**Amendement d'ADR-005 — le chemin d'API publié.** ADR-005 annonçait que Caddy
+routerait `/api/*` et `/auth/*` vers le back. C'est inapplicable en l'état : le
+front appelle l'API sur `/api/back/*` en dur (`front/src/lib/config.ts`,
+`BROWSER_API_BASE`), en production comme en développement. Router `/api/*` tel
+quel aurait envoyé `/api/back/api/dossiers` au back **sans retirer le préfixe**,
+soit un 404 sur chaque appel depuis le navigateur.
+
+Le Caddyfile utilise donc `handle_path /api/back/*`, qui retire le préfixe
+exactement comme le rewrite de `next.config.ts` en développement. Conséquence
+utile : le navigateur voit les mêmes chemins dans les deux environnements.
+L'alternative — rendre `BROWSER_API_BASE` dépendante de l'environnement pour
+publier des URL plus propres — touchait le chemin de données de tous les écrans
+d'E1 à E5 pour un gain cosmétique, et introduisait une divergence dev/prod. Elle
+est écartée.
+
+Les exigences de fond d'ADR-005 sont préservées : origine publique unique,
+cookie *host-only* (`path=/`), aucune CORS, `@fastify/cors` toujours inutile
+(constat #9 de l'audit, traité en T8).
+
+**Conséquences.** Vérifié en local sur la pile complète, le 18 septembre 2026 :
+les trois images se construisent, les six services démarrent sains, les 7
+migrations s'appliquent au démarrage, le worker se déclare prêt sur la file,
+Caddy émet son certificat, `/api/sante` renvoie
+`{"status":"ok","db":"ok","redis":"ok"}`, `/api/back/api/dossiers` renvoie 401
+(et non 404 : la preuve que le préfixe est bien retiré), et `http://` redirige
+en 308 vers `https://`.
+
+Deux risques anticipés par le plan n'existaient pas :
+
+- `@capclair/contract` n'apparaît pas comme paquet dans la sortie autonome de
+  Next, mais `transpilePackages` l'inline dans les chunks serveur — vérifié, ses
+  messages FR y sont présents, et le serveur autonome sert `/connexion` en 200.
+- `argon2` v0.44 embarque `prebuilds/linux-x64/argon2.musl.node` : elle ne
+  compile rien à l'installation, donc rien à outiller sur Alpine.
+
+Un piège Windows en revanche était réel : `Dockerfile` et `Caddyfile` n'ont pas
+d'extension et tombaient sous `* text=auto`, donc livrés en CRLF sur un poste
+Windows — une continuation `\` suivie de CRLF casse un `RUN`. Les deux sont
+désormais épinglés en LF dans `.gitattributes`, et `deploy.sh` est en `100755`
+faute de quoi `./deploy.sh` échoue sur le serveur.
+
+**Deux pièges de configuration relevés en revue, corrigés et vérifiés.**
+
+*Une variable présente mais vide n'équivaut pas à une variable absente.*
+`env_file` de Compose injecte `FOO=` comme la chaîne vide, et les `.default()`
+de `env.ts` ne s'appliquent qu'à `undefined` : `z.string().min(1)` refuse `""`,
+`z.coerce.number()` transforme `""` en `0` qui échoue `.positive()`, et un
+`z.enum` refuse `""`. Le premier `.env.prod.example` listait toutes les
+variables en clair et vides, sur le modèle de `back/.env.example` — un
+opérateur suivant le runbook n'aurait renseigné que les valeurs nommées, et le
+back serait sorti sur **23 erreurs de validation**, laissant `deploy.sh` bloqué
+sur `up -d --wait`. Reproduit dans le conteneur, puis corrigé : le gabarit
+distingue désormais huit variables obligatoires en clair (`PUBLIC_DOMAIN`, les
+trois `POSTGRES_*`, `DATABASE_URL`, `REDIS_URL`, `APP_BASE_URL`,
+`ANTHROPIC_API_KEY`) de tout le reste, **commenté** avec son défaut réel.
+`COOKIE_DOMAIN` est la seule exception : `env.ts` la fait passer par son
+préprocesseur `optional()`, qui traite le vide comme l'absence. Vérifié en
+repartant du gabarit : la pile démarre saine avec huit valeurs renseignées.
+
+*`SESSION_COOKIE_NAME` n'était donné qu'au back.* Le front résout ce nom par
+`process.env.SESSION_COOKIE_NAME ?? "capclair_session"`
+(`front/src/lib/config.ts`), et c'est ce nom que testent le middleware Edge et
+la garde serveur. Le service `front` du Compose ne recevait pas la variable :
+personnaliser le nom du cookie aurait donné un back authentifiant un cookie que
+le front ne regarde pas, donc une connexion réussie suivie d'une redirection
+vers `/connexion` sur toute route protégée. Le service `front` reçoit désormais
+`SESSION_COOKIE_NAME: ${SESSION_COOKIE_NAME:-capclair_session}`.
+
+Vérifié au passage, contre l'intuition : le runtime Edge du middleware **lit
+bien** l'environnement du conteneur, il ne fige pas la valeur au build. Testé en
+démarrant l'image du front avec un nom de cookie personnalisé — le middleware
+reconnaît ce cookie et laisse passer la requête. Le défaut ne venait donc pas
+d'une inlining au build, mais de la variable absente du service. Bout en bout
+avec `SESSION_COOKIE_NAME=capclair_prod_session` : connexion 200, cookie
+`capclair_prod_session` posé, `GET /dashboard` 200 sans redirection.
+
+**Reste à faire (hors de cette décision).** Provisionner le serveur, poser
+l'enregistrement DNS, dérouler le parcours complet sur le domaine public. Les
+sauvegardes, le durcissement du serveur et le CD restent dans E10.
