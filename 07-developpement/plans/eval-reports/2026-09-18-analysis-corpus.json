@@ -1,0 +1,793 @@
+{
+  "generatedAt": "2026-09-18T08:41:16.430Z",
+  "model": "claude-sonnet-5",
+  "letters": [
+    {
+      "id": "CAF-01",
+      "schemaValid": true,
+      "organismeExpected": "CAF",
+      "organismeProduced": "CAF",
+      "organismeCorrect": true,
+      "documentDateExpected": "3 juillet 2026",
+      "documentDateProduced": "Le 3 juillet 2026",
+      "documentDateCorrect": true,
+      "actions": {
+        "expectedCount": 1,
+        "producedCount": 1,
+        "matched": 0,
+        "matchedLenient": 0,
+        "missed": 1,
+        "extraGrounded": 1,
+        "ungrounded": 0
+      },
+      "justificatifs": {
+        "expectedCount": 2,
+        "producedCount": 2,
+        "matched": 2,
+        "matchedLenient": 2,
+        "missed": 0,
+        "extraGrounded": 0,
+        "ungrounded": 0
+      },
+      "echeanceExcerptGrounded": true,
+      "informationsUngrounded": 0,
+      "informationsTotal": 5,
+      "latencyMs": 11910,
+      "excerptsAudit": {
+        "actionsExpected": [
+          {
+            "excerpt": "un justificatif de domicile de moins de trois mois et votre avis d'imposition 2025 sur les revenus 2024",
+            "title": "Envoyer le justificatif de domicile et l'avis d'imposition"
+          }
+        ],
+        "actionsProduced": [
+          {
+            "excerpt": "Nous vous invitons à nous faire parvenir ces documents dans un délai de 30 jours à compter de la réception du présent courrier, par le biais de votre espace personnel sur caf.fr ou par voie postale",
+            "title": "Envoyer les documents manquants via caf.fr ou par courrier postal"
+          }
+        ],
+        "justificatifsExpected": [
+          "un justificatif de domicile de moins de trois mois",
+          "votre avis d'imposition 2025 sur les revenus 2024"
+        ],
+        "justificatifsProduced": [
+          "un justificatif de domicile de moins de trois mois",
+          "votre avis d'imposition 2025 sur les revenus 2024"
+        ]
+      }
+    },
+    {
+      "id": "CAF-02",
+      "schemaValid": true,
+      "organismeExpected": "CAF",
+      "organismeProduced": "CAF",
+      "organismeCorrect": true,
+      "documentDateExpected": "15 juin 2026",
+      "documentDateProduced": "Le 15 juin 2026",
+      "documentDateCorrect": true,
+      "actions": {
+        "expectedCount": 1,
+        "producedCount": 1,
+        "matched": 1,
+        "matchedLenient": 1,
+        "missed": 0,
+        "extraGrounded": 0,
+        "ungrounded": 0
+      },
+      "justificatifs": {
+        "expectedCount": 1,
+        "producedCount": 1,
+        "matched": 1,
+        "matchedLenient": 1,
+        "missed": 0,
+        "extraGrounded": 0,
+        "ungrounded": 0
+      },
+      "echeanceExcerptGrounded": true,
+      "informationsUngrounded": 0,
+      "informationsTotal": 4,
+      "latencyMs": 14648,
+      "excerptsAudit": {
+        "actionsExpected": [
+          {
+            "excerpt": "cette déclaration doit être effectuée avant le 5 juillet 2026 depuis votre espace personnel sur caf.fr",
+            "title": "Déclarer les ressources trimestrielles sur l'espace personnel"
+          }
+        ],
+        "actionsProduced": [
+          {
+            "excerpt": "cette déclaration doit être effectuée avant le 5 juillet 2026 depuis votre espace personnel sur caf.fr, rubrique « Mes déclarations trimestrielles »",
+            "title": "Déclarer ses ressources trimestrielles sur caf.fr"
+          }
+        ],
+        "justificatifsExpected": [
+          "vos bulletins de salaire de cette période"
+        ],
+        "justificatifsProduced": [
+          "en vous appuyant sur vos bulletins de salaire de cette période"
+        ]
+      }
+    },
+    {
+      "id": "CAF-03",
+      "schemaValid": true,
+      "organismeExpected": "CAF",
+      "organismeProduced": "CAF",
+      "organismeCorrect": true,
+      "documentDateExpected": "20 juin 2026",
+      "documentDateProduced": "Le 20 juin 2026",
+      "documentDateCorrect": true,
+      "actions": {
+        "expectedCount": 1,
+        "producedCount": 2,
+        "matched": 1,
+        "matchedLenient": 1,
+        "missed": 0,
+        "extraGrounded": 1,
+        "ungrounded": 0
+      },
+      "justificatifs": {
+        "expectedCount": 1,
+        "producedCount": 1,
+        "matched": 1,
+        "matchedLenient": 1,
+        "missed": 0,
+        "extraGrounded": 0,
+        "ungrounded": 0
+      },
+      "echeanceExcerptGrounded": true,
+      "informationsUngrounded": 0,
+      "informationsTotal": 5,
+      "latencyMs": 19011,
+      "excerptsAudit": {
+        "actionsExpected": [
+          {
+            "excerpt": "Cette somme doit nous être remboursée avant le 20 septembre 2026",
+            "title": "Rembourser le trop-perçu ou demander un échéancier"
+          }
+        ],
+        "actionsProduced": [
+          {
+            "excerpt": "Cette somme doit nous être remboursée avant le 20 septembre 2026.",
+            "title": "Rembourser le trop-perçu de 342,18 € par virement"
+          },
+          {
+            "excerpt": "faire l'objet d'un échéancier sur demande auprès de nos services, sur présentation d'un relevé d'identité bancaire (RIB)",
+            "title": "Demander un échéancier de paiement en fournissant un RIB"
+          }
+        ],
+        "justificatifsExpected": [
+          "sur présentation d'un relevé d'identité bancaire (RIB)"
+        ],
+        "justificatifsProduced": [
+          "sur présentation d'un relevé d'identité bancaire (RIB)"
+        ]
+      }
+    },
+    {
+      "id": "CAF-04",
+      "schemaValid": true,
+      "organismeExpected": "CAF",
+      "organismeProduced": "CAF",
+      "organismeCorrect": true,
+      "documentDateExpected": "25 juin 2026",
+      "documentDateProduced": "Le 25 juin 2026",
+      "documentDateCorrect": true,
+      "actions": {
+        "expectedCount": 1,
+        "producedCount": 1,
+        "matched": 1,
+        "matchedLenient": 1,
+        "missed": 0,
+        "extraGrounded": 0,
+        "ungrounded": 0
+      },
+      "justificatifs": {
+        "expectedCount": 1,
+        "producedCount": 1,
+        "matched": 1,
+        "matchedLenient": 1,
+        "missed": 0,
+        "extraGrounded": 0,
+        "ungrounded": 0
+      },
+      "echeanceExcerptGrounded": true,
+      "informationsUngrounded": 0,
+      "informationsTotal": 4,
+      "latencyMs": 15782,
+      "excerptsAudit": {
+        "actionsExpected": [
+          {
+            "excerpt": "nous vous invitons à déclarer ce changement de situation familiale dans un délai d'un mois",
+            "title": "Déclarer le changement de situation familiale en ligne"
+          }
+        ],
+        "actionsProduced": [
+          {
+            "excerpt": "nous vous invitons à déclarer ce changement de situation familiale dans un délai d'un mois à compter de la réception du présent courrier, depuis votre espace personnel sur caf.fr, rubrique « Signaler un changement ».",
+            "title": "Déclarer le changement de situation familiale sur caf.fr"
+          }
+        ],
+        "justificatifsExpected": [
+          "une copie de l'acte de naissance de l'enfant concerné"
+        ],
+        "justificatifsProduced": [
+          "Il vous sera demandé de joindre une copie de l'acte de naissance de l'enfant concerné."
+        ]
+      }
+    },
+    {
+      "id": "CAF-05",
+      "schemaValid": true,
+      "organismeExpected": "CAF",
+      "organismeProduced": "CAF",
+      "organismeCorrect": true,
+      "documentDateExpected": "1 juillet 2026",
+      "documentDateProduced": "Le 1 juillet 2026",
+      "documentDateCorrect": true,
+      "actions": {
+        "expectedCount": 1,
+        "producedCount": 1,
+        "matched": 1,
+        "matchedLenient": 1,
+        "missed": 0,
+        "extraGrounded": 0,
+        "ungrounded": 0
+      },
+      "justificatifs": {
+        "expectedCount": 0,
+        "producedCount": 0,
+        "matched": 0,
+        "matchedLenient": 0,
+        "missed": 0,
+        "extraGrounded": 0,
+        "ungrounded": 0
+      },
+      "echeanceExcerptGrounded": true,
+      "informationsUngrounded": 0,
+      "informationsTotal": 5,
+      "latencyMs": 15684,
+      "excerptsAudit": {
+        "actionsExpected": [
+          {
+            "excerpt": "Nous vous invitons à vous rapprocher de nos services dans les meilleurs délais",
+            "title": "Régulariser le dossier en contactant la CAF"
+          }
+        ],
+        "actionsProduced": [
+          {
+            "excerpt": "Nous vous invitons à vous rapprocher de nos services dans les meilleurs délais, par téléphone ou via votre espace personnel, afin d'éviter cette suspension.",
+            "title": "Contacter la CAF pour régulariser le dossier"
+          }
+        ],
+        "justificatifsExpected": [],
+        "justificatifsProduced": []
+      }
+    },
+    {
+      "id": "CPAM-01",
+      "schemaValid": true,
+      "organismeExpected": "CPAM",
+      "organismeProduced": "CPAM",
+      "organismeCorrect": true,
+      "documentDateExpected": "5 juin 2026",
+      "documentDateProduced": "Le 5 juin 2026",
+      "documentDateCorrect": true,
+      "actions": {
+        "expectedCount": 1,
+        "producedCount": 1,
+        "matched": 1,
+        "matchedLenient": 1,
+        "missed": 0,
+        "extraGrounded": 0,
+        "ungrounded": 0
+      },
+      "justificatifs": {
+        "expectedCount": 1,
+        "producedCount": 1,
+        "matched": 1,
+        "matchedLenient": 1,
+        "missed": 0,
+        "extraGrounded": 0,
+        "ungrounded": 0
+      },
+      "echeanceExcerptGrounded": true,
+      "informationsUngrounded": 0,
+      "informationsTotal": 5,
+      "latencyMs": 19312,
+      "excerptsAudit": {
+        "actionsExpected": [
+          {
+            "excerpt": "Merci de nous transmettre ce document avant le 5 août 2026",
+            "title": "Transmettre le devis dentaire détaillé"
+          }
+        ],
+        "actionsProduced": [
+          {
+            "excerpt": "Merci de nous transmettre ce document avant le 5 août 2026, par courrier à l'adresse de l'agence ou via la messagerie de votre compte ameli.",
+            "title": "Transmettre le devis détaillé du chirurgien-dentiste avant le 5 août 2026"
+          }
+        ],
+        "justificatifsExpected": [
+          "il manque le devis détaillé établi par votre chirurgien-dentiste"
+        ],
+        "justificatifsProduced": [
+          "il manque le devis détaillé établi par votre chirurgien-dentiste"
+        ]
+      }
+    },
+    {
+      "id": "CPAM-02",
+      "schemaValid": true,
+      "organismeExpected": "CPAM",
+      "organismeProduced": "CPAM",
+      "organismeCorrect": true,
+      "documentDateExpected": "10 juin 2026",
+      "documentDateProduced": "Le 10 juin 2026",
+      "documentDateCorrect": true,
+      "actions": {
+        "expectedCount": 1,
+        "producedCount": 2,
+        "matched": 1,
+        "matchedLenient": 1,
+        "missed": 0,
+        "extraGrounded": 1,
+        "ungrounded": 0
+      },
+      "justificatifs": {
+        "expectedCount": 1,
+        "producedCount": 1,
+        "matched": 1,
+        "matchedLenient": 1,
+        "missed": 0,
+        "extraGrounded": 0,
+        "ungrounded": 0
+      },
+      "echeanceExcerptGrounded": true,
+      "informationsUngrounded": 0,
+      "informationsTotal": 4,
+      "latencyMs": 19576,
+      "excerptsAudit": {
+        "actionsExpected": [
+          {
+            "excerpt": "merci de nous faire parvenir un duplicata de cette feuille de soins, à demander auprès de votre médecin",
+            "title": "Demander un duplicata de la feuille de soins au médecin"
+          }
+        ],
+        "actionsProduced": [
+          {
+            "excerpt": "merci de nous faire parvenir un duplicata de cette feuille de soins, à demander auprès de votre médecin",
+            "title": "Demander un duplicata de la feuille de soins à votre médecin"
+          },
+          {
+            "excerpt": "merci de nous faire parvenir un duplicata de cette feuille de soins",
+            "title": "Envoyer le duplicata de la feuille de soins à la CPAM"
+          }
+        ],
+        "justificatifsExpected": [
+          "un duplicata de cette feuille de soins"
+        ],
+        "justificatifsProduced": [
+          "merci de nous faire parvenir un duplicata de cette feuille de soins, à demander auprès de votre médecin"
+        ]
+      }
+    },
+    {
+      "id": "CPAM-03",
+      "schemaValid": true,
+      "organismeExpected": "CPAM",
+      "organismeProduced": "CPAM",
+      "organismeCorrect": true,
+      "documentDateExpected": "25 juin 2026",
+      "documentDateProduced": "Le 25 juin 2026",
+      "documentDateCorrect": true,
+      "actions": {
+        "expectedCount": 1,
+        "producedCount": 1,
+        "matched": 1,
+        "matchedLenient": 1,
+        "missed": 0,
+        "extraGrounded": 0,
+        "ungrounded": 0
+      },
+      "justificatifs": {
+        "expectedCount": 1,
+        "producedCount": 1,
+        "matched": 1,
+        "matchedLenient": 1,
+        "missed": 0,
+        "extraGrounded": 0,
+        "ungrounded": 0
+      },
+      "echeanceExcerptGrounded": true,
+      "informationsUngrounded": 0,
+      "informationsTotal": 6,
+      "latencyMs": 17811,
+      "excerptsAudit": {
+        "actionsExpected": [
+          {
+            "excerpt": "Nous vous invitons à vous rapprocher de votre employeur afin qu'il transmette cette attestation avant le 25 août 2026",
+            "title": "Demander à l'employeur de transmettre l'attestation de salaire"
+          }
+        ],
+        "actionsProduced": [
+          {
+            "excerpt": "Nous vous invitons à vous rapprocher de votre employeur afin qu'il transmette cette attestation avant le 25 août 2026, par le biais du service en ligne net-entreprises.fr.",
+            "title": "Demander à son employeur de transmettre l'attestation de salaire à la CPAM"
+          }
+        ],
+        "justificatifsExpected": [
+          "faute d'attestation de salaire transmise par votre employeur"
+        ],
+        "justificatifsProduced": [
+          "faute d'attestation de salaire transmise par votre employeur"
+        ]
+      }
+    },
+    {
+      "id": "CPAM-04",
+      "schemaValid": true,
+      "organismeExpected": "CPAM",
+      "organismeProduced": "CPAM",
+      "organismeCorrect": true,
+      "documentDateExpected": "1 juillet 2026",
+      "documentDateProduced": "Le 1 juillet 2026",
+      "documentDateCorrect": true,
+      "actions": {
+        "expectedCount": 1,
+        "producedCount": 1,
+        "matched": 1,
+        "matchedLenient": 1,
+        "missed": 0,
+        "extraGrounded": 0,
+        "ungrounded": 0
+      },
+      "justificatifs": {
+        "expectedCount": 1,
+        "producedCount": 1,
+        "matched": 1,
+        "matchedLenient": 1,
+        "missed": 0,
+        "extraGrounded": 0,
+        "ungrounded": 0
+      },
+      "echeanceExcerptGrounded": true,
+      "informationsUngrounded": 0,
+      "informationsTotal": 4,
+      "latencyMs": 14628,
+      "excerptsAudit": {
+        "actionsExpected": [
+          {
+            "excerpt": "Merci de nous transmettre votre avis d'imposition 2026 sur les revenus 2025 avant le 1er septembre 2026",
+            "title": "Transmettre l'avis d'imposition 2026 sur les revenus 2025"
+          }
+        ],
+        "actionsProduced": [
+          {
+            "excerpt": "Merci de nous transmettre votre avis d'imposition 2026 sur les revenus 2025 avant le 1er septembre 2026, via votre compte ameli ou par courrier.",
+            "title": "Envoyer l'avis d'imposition 2026 sur les revenus 2025"
+          }
+        ],
+        "justificatifsExpected": [
+          "votre avis d'imposition 2026 sur les revenus 2025"
+        ],
+        "justificatifsProduced": [
+          "Merci de nous transmettre votre avis d'imposition 2026 sur les revenus 2025 avant le 1er septembre 2026, via votre compte ameli ou par courrier."
+        ]
+      }
+    },
+    {
+      "id": "CPAM-05",
+      "schemaValid": true,
+      "organismeExpected": "CPAM",
+      "organismeProduced": "CPAM",
+      "organismeCorrect": true,
+      "documentDateExpected": "8 juillet 2026",
+      "documentDateProduced": "Le 8 juillet 2026",
+      "documentDateCorrect": true,
+      "actions": {
+        "expectedCount": 0,
+        "producedCount": 0,
+        "matched": 0,
+        "matchedLenient": 0,
+        "missed": 0,
+        "extraGrounded": 0,
+        "ungrounded": 0
+      },
+      "justificatifs": {
+        "expectedCount": 0,
+        "producedCount": 0,
+        "matched": 0,
+        "matchedLenient": 0,
+        "missed": 0,
+        "extraGrounded": 0,
+        "ungrounded": 0
+      },
+      "echeanceExcerptGrounded": null,
+      "informationsUngrounded": 0,
+      "informationsTotal": 4,
+      "latencyMs": 13995,
+      "excerptsAudit": {
+        "actionsExpected": [],
+        "actionsProduced": [],
+        "justificatifsExpected": [],
+        "justificatifsProduced": []
+      }
+    },
+    {
+      "id": "FT-01",
+      "schemaValid": true,
+      "organismeExpected": "FRANCE_TRAVAIL",
+      "organismeProduced": "FRANCE_TRAVAIL",
+      "organismeCorrect": true,
+      "documentDateExpected": "28 juin 2026",
+      "documentDateProduced": "Le 28 juin 2026",
+      "documentDateCorrect": true,
+      "actions": {
+        "expectedCount": 1,
+        "producedCount": 1,
+        "matched": 1,
+        "matchedLenient": 1,
+        "missed": 0,
+        "extraGrounded": 0,
+        "ungrounded": 0
+      },
+      "justificatifs": {
+        "expectedCount": 0,
+        "producedCount": 0,
+        "matched": 0,
+        "matchedLenient": 0,
+        "missed": 0,
+        "extraGrounded": 0,
+        "ungrounded": 0
+      },
+      "echeanceExcerptGrounded": true,
+      "informationsUngrounded": 0,
+      "informationsTotal": 6,
+      "latencyMs": 14633,
+      "excerptsAudit": {
+        "actionsExpected": [
+          {
+            "excerpt": "Cette actualisation doit être réalisée avant le 31 juillet 2026 depuis votre espace personnel",
+            "title": "Actualiser sa situation en ligne ou par téléphone"
+          }
+        ],
+        "actionsProduced": [
+          {
+            "excerpt": "Cette actualisation doit être réalisée avant le 31 juillet 2026 depuis votre espace personnel sur francetravail.fr ou par téléphone au 3949.",
+            "title": "Actualiser sa situation avant la date limite indiquée"
+          }
+        ],
+        "justificatifsExpected": [],
+        "justificatifsProduced": []
+      }
+    },
+    {
+      "id": "FT-02",
+      "schemaValid": true,
+      "organismeExpected": "FRANCE_TRAVAIL",
+      "organismeProduced": "FRANCE_TRAVAIL",
+      "organismeCorrect": true,
+      "documentDateExpected": "3 juillet 2026",
+      "documentDateProduced": "Le 3 juillet 2026",
+      "documentDateCorrect": true,
+      "actions": {
+        "expectedCount": 1,
+        "producedCount": 3,
+        "matched": 1,
+        "matchedLenient": 1,
+        "missed": 0,
+        "extraGrounded": 2,
+        "ungrounded": 0
+      },
+      "justificatifs": {
+        "expectedCount": 2,
+        "producedCount": 2,
+        "matched": 2,
+        "matchedLenient": 2,
+        "missed": 0,
+        "extraGrounded": 0,
+        "ungrounded": 0
+      },
+      "echeanceExcerptGrounded": true,
+      "informationsUngrounded": 0,
+      "informationsTotal": 5,
+      "latencyMs": 22046,
+      "excerptsAudit": {
+        "actionsExpected": [
+          {
+            "excerpt": "vous êtes convoquée à un entretien avec votre conseiller référent le 12 août 2026 à 10h00",
+            "title": "Se présenter à l'entretien du 12 août 2026 à 10h00, ou le reporter sous 48h en cas d'empêchement"
+          }
+        ],
+        "actionsProduced": [
+          {
+            "excerpt": "vous êtes convoquée à un entretien avec votre conseiller référent le 12 août 2026 à 10h00, à l'agence France Travail fictive de la Vallée, 8 place de l'Emploi.",
+            "title": "Se présenter à l'entretien avec le conseiller référent"
+          },
+          {
+            "excerpt": "Merci de vous munir de votre pièce d'identité et d'un état actualisé de vos démarches de recherche d'emploi.",
+            "title": "Apporter pièce d'identité et état des démarches de recherche"
+          },
+          {
+            "excerpt": "En cas d'empêchement, vous devez reporter ce rendez-vous depuis votre espace personnel dans un délai de 48 heures avant la date prévue.",
+            "title": "Reporter le rendez-vous en ligne si empêchement"
+          }
+        ],
+        "justificatifsExpected": [
+          "Merci de vous munir de votre pièce d'identité",
+          "un état actualisé de vos démarches de recherche d'emploi"
+        ],
+        "justificatifsProduced": [
+          "Merci de vous munir de votre pièce d'identité et d'un état actualisé de vos démarches de recherche d'emploi.",
+          "Merci de vous munir de votre pièce d'identité et d'un état actualisé de vos démarches de recherche d'emploi."
+        ]
+      }
+    },
+    {
+      "id": "FT-03",
+      "schemaValid": true,
+      "organismeExpected": "FRANCE_TRAVAIL",
+      "organismeProduced": "FRANCE_TRAVAIL",
+      "organismeCorrect": true,
+      "documentDateExpected": "20 juin 2026",
+      "documentDateProduced": "Le 20 juin 2026",
+      "documentDateCorrect": true,
+      "actions": {
+        "expectedCount": 1,
+        "producedCount": 1,
+        "matched": 1,
+        "matchedLenient": 1,
+        "missed": 0,
+        "extraGrounded": 0,
+        "ungrounded": 0
+      },
+      "justificatifs": {
+        "expectedCount": 1,
+        "producedCount": 1,
+        "matched": 1,
+        "matchedLenient": 1,
+        "missed": 0,
+        "extraGrounded": 0,
+        "ungrounded": 0
+      },
+      "echeanceExcerptGrounded": true,
+      "informationsUngrounded": 0,
+      "informationsTotal": 4,
+      "latencyMs": 17220,
+      "excerptsAudit": {
+        "actionsExpected": [
+          {
+            "excerpt": "Merci de nous transmettre l'attestation de présence signée par votre organisme de formation pour le mois de juin avant le 10 juillet 2026",
+            "title": "Transmettre l'attestation de présence en formation de juin"
+          }
+        ],
+        "actionsProduced": [
+          {
+            "excerpt": "Merci de nous transmettre l'attestation de présence signée par votre organisme de formation pour le mois de juin avant le 10 juillet 2026, depuis votre espace personnel ou par courrier.",
+            "title": "Transmettre l'attestation de présence signée par l'organisme de formation"
+          }
+        ],
+        "justificatifsExpected": [
+          "l'attestation de présence signée par votre organisme de formation"
+        ],
+        "justificatifsProduced": [
+          "Merci de nous transmettre l'attestation de présence signée par votre organisme de formation pour le mois de juin avant le 10 juillet 2026, depuis votre espace personnel ou par courrier."
+        ]
+      }
+    },
+    {
+      "id": "FT-04",
+      "schemaValid": true,
+      "organismeExpected": "FRANCE_TRAVAIL",
+      "organismeProduced": "FRANCE_TRAVAIL",
+      "organismeCorrect": true,
+      "documentDateExpected": "10 juillet 2026",
+      "documentDateProduced": "Le 10 juillet 2026",
+      "documentDateCorrect": true,
+      "actions": {
+        "expectedCount": 1,
+        "producedCount": 1,
+        "matched": 1,
+        "matchedLenient": 1,
+        "missed": 0,
+        "extraGrounded": 0,
+        "ungrounded": 0
+      },
+      "justificatifs": {
+        "expectedCount": 0,
+        "producedCount": 0,
+        "matched": 0,
+        "matchedLenient": 0,
+        "missed": 0,
+        "extraGrounded": 0,
+        "ungrounded": 0
+      },
+      "echeanceExcerptGrounded": true,
+      "informationsUngrounded": 0,
+      "informationsTotal": 6,
+      "latencyMs": 18736,
+      "excerptsAudit": {
+        "actionsExpected": [
+          {
+            "excerpt": "Cette somme doit nous être remboursée avant le 30 septembre 2026",
+            "title": "Rembourser le trop-perçu ou demander un plan de remboursement échelonné"
+          }
+        ],
+        "actionsProduced": [
+          {
+            "excerpt": "Cette somme doit nous être remboursée avant le 30 septembre 2026. Vous pouvez effectuer ce remboursement en une fois ou demander un plan de remboursement échelonné auprès de votre conseiller.",
+            "title": "Rembourser la somme ou demander un échelonnement auprès du conseiller"
+          }
+        ],
+        "justificatifsExpected": [],
+        "justificatifsProduced": []
+      }
+    },
+    {
+      "id": "FT-05",
+      "schemaValid": true,
+      "organismeExpected": "FRANCE_TRAVAIL",
+      "organismeProduced": "FRANCE_TRAVAIL",
+      "organismeCorrect": true,
+      "documentDateExpected": "5 juillet 2026",
+      "documentDateProduced": "Le 5 juillet 2026",
+      "documentDateCorrect": true,
+      "actions": {
+        "expectedCount": 1,
+        "producedCount": 2,
+        "matched": 1,
+        "matchedLenient": 1,
+        "missed": 0,
+        "extraGrounded": 1,
+        "ungrounded": 0
+      },
+      "justificatifs": {
+        "expectedCount": 0,
+        "producedCount": 0,
+        "matched": 0,
+        "matchedLenient": 0,
+        "missed": 0,
+        "extraGrounded": 0,
+        "ungrounded": 0
+      },
+      "echeanceExcerptGrounded": true,
+      "informationsUngrounded": 0,
+      "informationsTotal": 7,
+      "latencyMs": 20885,
+      "excerptsAudit": {
+        "actionsExpected": [
+          {
+            "excerpt": "Nous vous invitons à vérifier l'exactitude des informations relatives à votre contrat de travail dans votre espace personnel et à nous signaler toute erreur avant le 15 août 2026",
+            "title": "Vérifier les informations du contrat et signaler toute erreur"
+          }
+        ],
+        "actionsProduced": [
+          {
+            "excerpt": "Nous vous invitons à vérifier l'exactitude des informations relatives à votre contrat de travail dans votre espace personnel",
+            "title": "Vérifier les informations du contrat de travail dans l'espace personnel"
+          },
+          {
+            "excerpt": "à nous signaler toute erreur avant le 15 août 2026",
+            "title": "Signaler toute erreur dans le recalcul avant la date limite"
+          }
+        ],
+        "justificatifsExpected": [],
+        "justificatifsProduced": []
+      }
+    }
+  ],
+  "totals": {
+    "count": 15,
+    "schemaValidRate": 1,
+    "organismeAccuracy": 1,
+    "documentDateAccuracy": 1,
+    "actionRecall": 0.929,
+    "actionRecallLenient": 0.929,
+    "actionUngroundedRate": 0,
+    "justificatifRecall": 1,
+    "justificatifUngroundedRate": 0,
+    "informationUngroundedRate": 0,
+    "medianLatencyMs": 17220
+  }
+}

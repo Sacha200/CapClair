@@ -402,3 +402,81 @@ toucherait que ce module.
 (`documents.corpus.test.ts`) : texte intégral extrait, largement sous le budget
 de 5 s par courrier. L'avertissement `standardFontDataUrl` de PDF.js est
 inoffensif sur ce chemin (métriques de polices standard, texte déjà extrait).
+
+---
+
+## ADR-017 — Harnais d'évaluation du corpus IA
+
+**Date** : sprint de consolidation technique (audit du 16 septembre 2026, tâche T1).
+**Statut** : acté.
+
+**Contexte.** Le différenciateur produit de CapClair est la fiabilité de
+l'analyse, et elle n'était mesurée nulle part. `documents.corpus.test.ts` ne
+vérifiait que l'extraction PDF ; `05-courriers-fictifs/dataset-reference.json`
+(15 entrées, vérité terrain rédigée à la main) n'était exploité par aucun test.
+Le seul composant faillible du système n'avait donc aucun chiffre.
+
+**Décision.**
+
+1. **Emplacement.** `back/test/eval/`, projet Vitest **`eval`** distinct,
+   extension `*.eval.ts`. Ni `npm test`, ni `npm run test:int`, ni
+   `npm run test:all`, ni la CI ne le ramassent : seul `npm run eval:corpus` le
+   déclenche. `test:all` valait `vitest run` sans sélection de projet et aurait
+   donc lancé des appels facturés ; il cible désormais `unit` et `integration`
+   explicitement.
+2. **Périmètre mesuré.** `analyzeLetter()` en direct sur le texte extrait par
+   `server/pdf` — pas le parcours HTTP complet. Un écart mesuré ici désigne le
+   prompt ou le modèle, jamais le câblage.
+3. **Définition d'« invention ».** Deux métriques distinctes, jamais fusionnées :
+   **non ancré** (`sourceExcerpt` absent du texte source — défaut objectif, ne
+   dépend d'aucun appariement) et **hors référentiel** (ancré mais sans
+   correspondance au dataset — informatif, le dataset pouvant être incomplet).
+4. **Seuils.** Première exécution = référence, aucun seuil de régression. Les
+   seuils seront fixés à partir des chiffres réels.
+5. **Critère d'appariement — amendé en cours d'exécution.** Le plan posait
+   « l'extrait, jamais le titre ». Vérifié sur CAF-01 : le dataset ancre la
+   consigne sur la phrase qui liste les documents, le modèle sur celle qui donne
+   le délai et le canal. Les deux extraits sont ancrés, aucun n'a tort, et
+   l'appariement par extrait échoue — rappel actions 0 % alors que l'action est
+   correctement trouvée. Le critère par extrait est objectif pour un
+   **justificatif** (un document nommé n'apparaît qu'une fois) mais pas pour une
+   **action**. Les actions passent donc par un appariement en deux passes
+   (extrait, puis recouvrement de mots significatifs entre titres) et **deux
+   rappels sont publiés** : `actionRecall` strict et `actionRecallLenient`
+   souple. Aucune entrée du dataset n'a été modifiée — la vérité terrain reste
+   indépendante de ce que le modèle produit.
+
+**Chiffre de référence — `claude-sonnet-5`, 15 courriers, 18 septembre 2026.**
+
+| Métrique | Valeur |
+|---|---|
+| Réponses conformes à `AnalysisResultSchema` | **100 %** (15/15) |
+| Organisme correct | **100 %** (15/15) |
+| Date du courrier correcte | **100 %** (15/15) |
+| Rappel actions | **92,9 %** (13/14, strict comme souple) |
+| Rappel justificatifs | **100 %** (13/13) |
+| Extraits non ancrés (actions, justificatifs, informations) | **0 %** |
+| Latence médiane d'un appel | **17,2 s** (11,9 s à 22,0 s) |
+
+**Conséquences.** Aucun extrait inventé sur les 15 courriers : la contrainte
+anti-hallucination du produit (US-3.2 AC5, US-4.2 AC2) tient sur le corpus.
+La table d'interprétation du plan (rappel ≥ 90 %, non ancré ≤ 2 %, schéma
+100 %) classe ce résultat en « le pipeline tient, continuer le plan tel quel » :
+ni le chantier prompt ni le repli Opus 5 (plan E3 §9.5) ne sont ouverts.
+
+Le seul écart de rappel est CAF-01, où le modèle a bien produit l'action mais
+l'a intitulée par son canal (« Envoyer les documents manquants via caf.fr ou par
+courrier postal ») là où le dataset l'intitule par ses pièces (« Envoyer le
+justificatif de domicile et l'avis d'imposition »). Les deux titres ne partagent
+qu'un mot significatif, le repli ne déclenche pas. Le rappel réel est donc
+vraisemblablement de 100 % ; **92,9 % est un plancher**, et c'est le chiffre
+publié.
+
+Le rapport daté est commité en `07-developpement/plans/eval-reports/` (JSON
+complet + résumé Markdown), avec les extraits et titres comparés courrier par
+courrier pour qu'un rappel bas soit diagnosticable sans re-payer une exécution.
+Le corpus étant fictif, ces extraits peuvent être commités ; avec de vrais
+courriers, US-8.2 l'interdirait et le rapport devrait rester local.
+
+Coût constaté : 15 appels Sonnet à `max_tokens: 4096`, environ 4 minutes
+d'exécution.
