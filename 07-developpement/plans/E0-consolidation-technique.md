@@ -702,6 +702,25 @@ git add README.md && git commit -m "docs: metrique de reference de qualite d'ana
 ---
 ## Tâche 2 — Conteneurisation et déploiement HTTPS
 
+Statut : **faite au 18 septembre 2026, sauf la mise en service serveur**
+(étape 12). Commits `3d5f474` et `a9d586f`.
+
+Validé sur la pile complète en local (`PUBLIC_DOMAIN=localhost`) : trois images
+construites, six services sains, 7 migrations appliquées au démarrage du back,
+certificat émis par Caddy, `/api/sante` → `{"status":"ok","db":"ok","redis":"ok"}`.
+Parcours réel déroulé de bout en bout à travers Caddy : inscription → import de
+CAF-01.pdf (1516 caractères extraits) → deux consentements → `POST /analyser`
+202 `EN_ATTENTE` → worker → `TERMINEE`, résultat lu en base (organisme CAF,
+1 action, 2 justificatifs, 5 informations, 0 à vérifier, date du courrier
+dérivée côté serveur au 2026-07-03). Le worker consomme bien dans le conteneur.
+
+Trois écarts au plan, consignés en ADR-018 : routage Caddy sur `/api/back/*`
+avec retrait du préfixe (router `/api/*` tel quel donnait un 404 sur chaque
+appel navigateur), `DATABASE_URL` factice dans l'étage de build pour
+`prisma generate`, et épinglage LF de `Dockerfile`/`Caddyfile` plus le bit
+exécutable sur `deploy.sh`. Les risques R2 (`@capclair/contract` en sortie
+autonome) et R3 (`argon2` sur Alpine) n'existaient pas — vérifiés, pas corrigés.
+
 **Pourquoi :** rien n'est déployé, l'URL HTTPS était due le 2 août, et c'est l'écart le plus visible entre le plan et le réel parce qu'il se vérifie en un clic. Le risque n'est pas technique, il est calendaire : un déploiement découvert en octobre est un déploiement qui déborde.
 
 **Ce que la tâche ne fait pas :** pas de CD automatique (décision #6), pas de sauvegarde automatisée (à traiter en E10), pas de multi-instance.
@@ -722,7 +741,7 @@ git add README.md && git commit -m "docs: metrique de reference de qualite d'ana
 - Produit : trois services `back`, `worker`, `front` joignables sur le réseau Compose interne par leur nom, et un service `caddy` seul exposé sur 80/443.
 - Consomme : les images `postgres:17` et `redis:7-alpine` déjà utilisées en dev, avec la même configuration ICU pour le tri des accents.
 
-- [ ] **Étape 1 : passer Next en sortie autonome**
+- [x] **Étape 1 : passer Next en sortie autonome**
 
 Dans `front/next.config.ts`, ajouter à l'objet `nextConfig`, avant `transpilePackages` :
 
@@ -741,7 +760,7 @@ Attention : avec des workspaces npm et `@capclair/contract` en `file:../contract
 
 (et l'import `fileURLToPath` depuis `node:url` en tête de fichier).
 
-- [ ] **Étape 2 : vérifier que le build autonome fonctionne en local, avant Docker**
+- [x] **Étape 2 : vérifier que le build autonome fonctionne en local, avant Docker**
 
 ```bash
 cd 07-developpement && npm run build --workspace @capclair/contract && npm run build --workspace front
@@ -750,7 +769,7 @@ ls front/.next/standalone/
 
 Attendu : un répertoire `standalone` contenant `server.js` et un `node_modules` réduit. S'il est absent, `output: "standalone"` n'a pas été pris en compte : vérifier qu'on a bien modifié le bon fichier et relancé un build complet.
 
-- [ ] **Étape 3 : créer le `.dockerignore`**
+- [x] **Étape 3 : créer le `.dockerignore`**
 
 Créer `07-developpement/.dockerignore` — sans lui, le contexte de build embarque `node_modules`, `.next`, le volume `storage/` et les 217 Mo de profil Chrome de `.claude/skills/run-capclair/.run/` :
 
@@ -768,7 +787,7 @@ back/storage
 **/*.log
 ```
 
-- [ ] **Étape 4 : écrire le Dockerfile du back**
+- [x] **Étape 4 : écrire le Dockerfile du back**
 
 Le back et le worker partagent la **même image** : seule la commande diffère. Créer `back/Dockerfile` (contexte de build = `07-developpement/`) :
 
@@ -814,7 +833,7 @@ CMD ["node", "dist/index.js"]
 
 Si `npm ci --ignore-scripts` fait échouer `argon2` au démarrage (module natif non construit), retirer `--ignore-scripts` et déplacer la copie du schéma Prisma avant le `npm ci`.
 
-- [ ] **Étape 5 : écrire le Dockerfile du front**
+- [x] **Étape 5 : écrire le Dockerfile du front**
 
 Créer `front/Dockerfile` (même contexte de build) :
 
@@ -849,7 +868,7 @@ CMD ["node", "front/server.js"]
 
 Le chemin exact de `server.js` dans la sortie autonome dépend de `outputFileTracingRoot`. **Vérifier avec `ls front/.next/standalone/` (étape 2) et adapter le `CMD`** : à la racine de `standalone` si le tracing part de `front/`, sous `front/` s'il part du workspace.
 
-- [ ] **Étape 6 : écrire le Caddyfile**
+- [x] **Étape 6 : écrire le Caddyfile**
 
 Créer `07-developpement/Caddyfile`. Conforme à ADR-005 : le proxy n'expose que `/api/*` et `/auth/*` vers le back, tout le reste va au front. Le volume de stockage n'est jamais servi.
 
@@ -886,7 +905,7 @@ Créer `07-developpement/Caddyfile`. Conforme à ADR-005 : le proxy n'expose que
 
 Caddy obtient et renouvelle le certificat Let's Encrypt seul dès que `PUBLIC_DOMAIN` pointe sur l'IP du serveur.
 
-- [ ] **Étape 7 : écrire le Compose de production**
+- [x] **Étape 7 : écrire le Compose de production**
 
 Créer `07-developpement/docker-compose.prod.yml`. Différences clefs avec le compose de dev : aucun port de base exposé sur l'hôte, `TRUST_PROXY=true` (le back est derrière Caddy, sinon le rate limit voit une seule IP), `COOKIE_SECURE=true`.
 
@@ -995,7 +1014,7 @@ volumes:
   caddyconfig:
 ```
 
-- [ ] **Étape 8 : écrire `.env.prod.example`**
+- [x] **Étape 8 : écrire `.env.prod.example`**
 
 Créer `07-developpement/.env.prod.example`. Même règle que `back/.env.example` : aucune valeur réelle.
 
@@ -1026,7 +1045,7 @@ RECONCILE_STALE_MINUTES=
 
 Ajouter `.env.prod` à `07-developpement/.gitignore` s'il n'y est pas déjà couvert.
 
-- [ ] **Étape 9 : écrire le script de déploiement**
+- [x] **Étape 9 : écrire le script de déploiement**
 
 Créer `07-developpement/deploy.sh` :
 
@@ -1061,7 +1080,7 @@ curl -fsS "https://${PUBLIC_DOMAIN:-localhost}/api/sante" && echo " -> OK"
 chmod +x 07-developpement/deploy.sh
 ```
 
-- [ ] **Étape 10 : valider la pile complète en local avant le serveur**
+- [x] **Étape 10 : valider la pile complète en local avant le serveur**
 
 Ne jamais déboguer un Dockerfile directement en production. En local, avec un `.env.prod` de test et `PUBLIC_DOMAIN=localhost` :
 
@@ -1077,7 +1096,7 @@ Attendu : cinq services sains, la sonde répond. Caddy échouera à obtenir un c
 
 Vérifier aussi que le worker consomme : lancer une analyse via l'interface sur `http://localhost` et suivre `docker compose -f docker-compose.prod.yml logs -f worker`.
 
-- [ ] **Étape 11 : commiter**
+- [x] **Étape 11 : commiter**
 
 ```bash
 git add back/Dockerfile front/Dockerfile front/next.config.ts \
@@ -1093,7 +1112,7 @@ git commit -m "build: conteneurisation back/worker/front et pile de production C
 4. `./deploy.sh`.
 5. Vérifier `https://<domaine>/api/sante`, puis dérouler le parcours complet à la main : inscription, import d'un courrier fictif, consentement, analyse, dossier.
 
-- [ ] **Étape 13 : documenter et acter**
+- [x] **Étape 13 : documenter et acter**
 
 Mettre à jour `07-developpement/README.md` avec la procédure de déploiement et l'URL publique. Mettre à jour le `README.md` racine (statut du projet, E10 partiellement livré). Ajouter un **ADR-018 « Déploiement VPS + Compose + Caddy »** consignant la décision #5 et le refus du CD automatique ce sprint (décision #6).
 
