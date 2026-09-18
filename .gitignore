@@ -8,6 +8,9 @@
 .env
 .env.*
 !.env.example
+# `!.env.example` ne couvre que ce nom exact : les gabarits suffixés
+# doivent être réautorisés un par un (audit T2).
+!.env.prod.example
 *.pem
 *.key
 

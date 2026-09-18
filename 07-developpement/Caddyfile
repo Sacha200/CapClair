@@ -1,0 +1,39 @@
+{$PUBLIC_DOMAIN} {
+	encode zstd gzip
+
+	# Sonde d'état (US-10.4), appelée par deploy.sh. Chemin direct du back.
+	handle /api/sante {
+		reverse_proxy back:3001
+	}
+
+	# Tout ce que le navigateur adresse à l'API passe par /api/back/*
+	# (front/src/lib/config.ts, BROWSER_API_BASE). `handle_path` retire le
+	# préfixe : le back reçoit /api/dossiers ou /auth/login, exactement ce que
+	# produit le rewrite de next.config.ts en développement.
+	#
+	# Écart assumé avec ADR-005, qui annonçait un routage de /api/* et /auth/*
+	# vers le back : le front n'appelle jamais ces chemins depuis le navigateur.
+	# Router /api/* tel quel enverrait /api/back/api/dossiers au back sans
+	# retirer le préfixe — un 404 sur chaque appel. Voir ADR-018.
+	handle_path /api/back/* {
+		reverse_proxy back:3001
+	}
+
+	# Tout le reste : Next. Le volume de stockage des PDF n'est jamais servi
+	# directement — les fichiers passent par une route gardée du back.
+	handle {
+		reverse_proxy front:3000
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+
+	log {
+		output stdout
+		format console
+	}
+}
