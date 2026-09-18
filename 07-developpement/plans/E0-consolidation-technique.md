@@ -109,6 +109,15 @@ Les propositions par défaut sont applicables sans arbitrage explicite.
 
 ## Tâche 1 — Harnais d'évaluation du corpus IA
 
+Statut : **terminée le 18 septembre 2026** (commits `fbc25e2` → `3845024`).
+Chiffre de référence `claude-sonnet-5` sur les 15 courriers : schéma 100 %,
+organisme 100 %, date 100 %, rappel actions 92,9 %, rappel justificatifs 100 %,
+**0 % d'extrait non ancré**, latence médiane 17,2 s. Lecture selon la table de
+l'étape 9 : *le pipeline tient, continuer le plan tel quel*. Deux écarts au plan,
+consignés en ADR-017 : appariement des actions en deux passes (extrait puis
+titre), et `test:all` restreint à `unit`+`integration` pour qu'il ne déclenche
+pas d'appels facturés. Rapport : `plans/eval-reports/2026-09-18-analysis-corpus.md`.
+
 **Pourquoi :** le différenciateur produit est la fiabilité, et elle n'est mesurée nulle part. À la fin de cette tâche on connaît la précision de classification d'organisme, le rappel sur les actions et les justificatifs, le taux de production non ancrée, le taux d'échec de validation du schéma et l'exactitude des dates explicites. Ce chiffre devient la métrique produit citable en démonstration et en entretien.
 
 **Coût réel :** 15 courriers × 1 appel Sonnet à `max_tokens: 4096`. Quelques dizaines de centimes par exécution complète.
@@ -146,7 +155,7 @@ Les propositions par défaut sont applicables sans arbitrage explicite.
 }
 ```
 
-- [ ] **Étape 1 : créer les utilitaires de comparaison**
+- [x] **Étape 1 : créer les utilitaires de comparaison**
 
 L'appariement attendu ↔ produit se fait sur le `source_excerpt`, jamais sur le titre : un titre peut être reformulé légitimement par le modèle, un extrait littéral non. C'est le seul critère objectif.
 
@@ -237,7 +246,7 @@ export function compareByExcerpt(
 }
 ```
 
-- [ ] **Étape 2 : écrire les tests du harnais lui-même**
+- [x] **Étape 2 : écrire les tests du harnais lui-même**
 
 Un harnais de mesure non testé mesure faux. Ces tests tournent en projet `unit`, gratuitement.
 
@@ -311,7 +320,7 @@ describe("compareByExcerpt", () => {
 });
 ```
 
-- [ ] **Étape 3 : lancer ces tests, vérifier qu'ils passent**
+- [x] **Étape 3 : lancer ces tests, vérifier qu'ils passent**
 
 ```bash
 cd 07-developpement/back && npx vitest run --project unit test/eval/corpus.helpers.test.ts
@@ -321,14 +330,14 @@ Attendu : 8 tests verts, aucun appel réseau, aucun coût.
 
 Si Vitest ne trouve aucun test : le projet `unit` ne cible que `src/**/*.test.ts`. Élargir son `include` à `["src/**/*.test.ts", "test/eval/**/*.test.ts"]` dans `back/vitest.workspace.ts`, puis relancer.
 
-- [ ] **Étape 4 : commiter les utilitaires**
+- [x] **Étape 4 : commiter les utilitaires**
 
 ```bash
 git add back/test/eval/corpus.helpers.ts back/test/eval/corpus.helpers.test.ts back/vitest.workspace.ts
 git commit -m "test(eval): utilitaires de comparaison du corpus IA (audit T1)"
 ```
 
-- [ ] **Étape 5 : écrire le générateur de rapport**
+- [x] **Étape 5 : écrire le générateur de rapport**
 
 Créer `back/test/eval/report.ts` :
 
@@ -477,7 +486,7 @@ ${rows}
 }
 ```
 
-- [ ] **Étape 6 : écrire le harnais**
+- [x] **Étape 6 : écrire le harnais**
 
 Avant d'écrire l'import de l'extraction PDF, **vérifier le nom exporté réel** :
 
@@ -625,7 +634,7 @@ describe.skipIf(!existsSync(DATASET_PATH))("évaluation du corpus d'analyse", ()
 });
 ```
 
-- [ ] **Étape 7 : déclarer le projet Vitest `eval` et le script npm**
+- [x] **Étape 7 : déclarer le projet Vitest `eval` et le script npm**
 
 Dans `back/vitest.workspace.ts`, ajouter un troisième projet **après** `integration` :
 
@@ -649,7 +658,7 @@ Dans `back/package.json`, ajouter aux scripts :
     "eval:corpus": "vitest run --project eval",
 ```
 
-- [ ] **Étape 8 : exécution à blanc sur UN courrier**
+- [x] **Étape 8 : exécution à blanc sur UN courrier**
 
 Avant de dépenser 15 appels, limiter temporairement le dataset (`dataset.slice(0, 1)` dans la boucle) et lancer :
 
@@ -659,7 +668,7 @@ cd 07-developpement/back && npm run eval:corpus
 
 Attendu : deux fichiers dans `07-developpement/plans/eval-reports/`, un tableau Markdown lisible, des chiffres non absurdes. Corriger le harnais si un champ est systématiquement à zéro (souvent : mauvais nom de propriété dans le dataset ou dans `AnalysisResult`). Rétablir le dataset complet ensuite.
 
-- [ ] **Étape 9 : exécution complète et interprétation**
+- [x] **Étape 9 : exécution complète et interprétation**
 
 ```bash
 cd 07-developpement/back && npm run eval:corpus
@@ -673,7 +682,7 @@ cd 07-developpement/back && npm run eval:corpus
 | Rappel 70–90 %, ou non ancré 2–10 % | Acceptable en beta. Ouvrir un chantier prompt en P1, après T8. |
 | Rappel < 70 %, ou non ancré > 10 %, ou schéma < 95 % | **Arrêter le plan.** Le travail sur les prompts et le repli Opus 5 (plan E3 §9.5) passent avant tout le reste, E5 compris. |
 
-- [ ] **Étape 10 : commiter le harnais, le rapport et l'ADR**
+- [x] **Étape 10 : commiter le harnais, le rapport et l'ADR**
 
 Ajouter à `07-developpement/decisions.md` un **ADR-017 « Harnais d'évaluation du corpus IA »** consignant les décisions #1 à #4 et le chiffre de référence obtenu.
 
@@ -682,7 +691,7 @@ git add back/test/eval back/vitest.workspace.ts back/package.json plans/eval-rep
 git commit -m "test(eval): harnais de mesure de la qualite d'analyse IA sur le corpus (audit T1)"
 ```
 
-- [ ] **Étape 11 : inscrire le chiffre là où il sera lu**
+- [x] **Étape 11 : inscrire le chiffre là où il sera lu**
 
 Ajouter au `README.md` racine, section « Décisions actées », une ligne portant la métrique de référence et sa date. C'est ce chiffre qui se cite en démonstration, en portfolio et en entretien — il ne doit pas rester enfoui dans `plans/`.
 
