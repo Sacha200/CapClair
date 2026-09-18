@@ -42,6 +42,82 @@ cp .env.local.example .env.local
 npm run dev            # UI sur http://localhost:3000
 ```
 
+## Déploiement (pile de production)
+
+Cible actée : **VPS + Docker Compose + Caddy** (ADR-018). Déploiement **manuel**,
+pas de CD ce sprint. Aucun port de base de données ni de Redis n'est publié :
+seul `caddy` expose 80 et 443.
+
+| Fichier | Rôle |
+|---|---|
+| `back/Dockerfile` | Image commune API + worker (seule la commande diffère) |
+| `front/Dockerfile` | Next en sortie autonome (`output: "standalone"`) |
+| `Caddyfile` | Reverse-proxy, TLS automatique, routage par chemin |
+| `docker-compose.prod.yml` | Les six services et leurs volumes |
+| `deploy.sh` | `git pull` + build + `up -d --wait` + sonde |
+| `.env.prod.example` | Gabarit à copier en `.env.prod` sur le serveur |
+
+Le contexte de build est **`07-developpement/`**, pas `back/` ni `front/` :
+
+```bash
+docker compose -f docker-compose.prod.yml --env-file .env.prod build
+```
+
+### Routage
+
+Caddy sert une origine publique unique, donc un cookie de session *host-only*
+et aucune CORS (ADR-005) :
+
+| Chemin public | Destination |
+|---|---|
+| `/api/sante` | `back:3001/api/sante` — sonde d'état |
+| `/api/back/*` | `back:3001/*` — **le préfixe est retiré** (`handle_path`) |
+| tout le reste | `front:3000` |
+
+Le navigateur n'adresse l'API que sur `/api/back/*`
+(`front/src/lib/config.ts`, `BROWSER_API_BASE`), en production comme en
+développement. C'est le rewrite de `next.config.ts` qui fait ce travail en
+local, et Caddy qui le fait en production. **Ne pas router `/api/*` tel quel
+vers le back** : `/api/back/api/dossiers` y arriverait sans préfixe retiré, soit
+un 404 sur chaque appel.
+
+Les appels serveur → back (composants serveur Next) passent, eux, par
+`BACK_ORIGIN=http://back:3001` sur le réseau interne, sans traverser Caddy.
+
+### Migrations
+
+Le service `back` lance `prisma migrate deploy` avant de servir. Une seule
+instance, donc pas de course. Le `worker` attend que `back` soit *healthy*, pour
+ne toucher la base qu'une fois le schéma à jour.
+
+### Première mise en service sur un serveur
+
+1. VPS (2 vCPU / 4 Go suffisent au volume MVP), Docker et le plugin Compose.
+2. Enregistrement DNS **A** du domaine vers l'IP du serveur, **avant** le
+   premier démarrage : sans lui, Caddy ne peut pas obtenir son certificat.
+3. Cloner le dépôt, puis `cp .env.prod.example .env.prod` et le renseigner.
+   `COOKIE_SECURE`, `TRUST_PROXY` et `RATE_LIMIT_REDIS` sont déjà forcés par le
+   Compose : ne pas les contredire.
+4. `./deploy.sh`
+5. Vérifier `https://<domaine>/api/sante`, puis dérouler le parcours complet à
+   la main : inscription, import d'un courrier fictif, consentement, analyse,
+   dossier.
+
+### Validation locale de la pile
+
+Avant de toucher au serveur, la même pile tourne en local avec
+`PUBLIC_DOMAIN=localhost` dans un `.env.prod` de test. Caddy émet alors un
+certificat par son autorité interne, d'où le `-k` :
+
+```bash
+docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --wait
+docker compose -f docker-compose.prod.yml ps
+curl -fsSk https://localhost/api/sante
+```
+
+Attendu : six services sains et `{"status":"ok","db":"ok","redis":"ok",...}`.
+`http://localhost` répond 308 vers HTTPS.
+
 ## Commandes par paquet
 
 ```bash

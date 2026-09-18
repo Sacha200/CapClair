@@ -480,3 +480,81 @@ courriers, US-8.2 l'interdirait et le rapport devrait rester local.
 
 Coût constaté : 15 appels Sonnet à `max_tokens: 4096`, environ 4 minutes
 d'exécution.
+
+---
+
+## ADR-018 — Déploiement : VPS + Docker Compose + Caddy, mise en service manuelle
+
+**Date** : sprint de consolidation technique (audit du 16 septembre 2026, tâche T2).
+**Statut** : acté ; pile validée en local, mise en service serveur à faire.
+
+**Contexte.** Rien n'était déployé : aucun Dockerfile applicatif, pas de
+reverse-proxy, pas de CD. L'URL HTTPS était due le 2 août. C'est l'écart le plus
+visible entre le plan et le réel, parce qu'il se vérifie en un clic.
+
+**Décision.**
+
+1. **Cible : VPS + Docker Compose + Caddy.** Caddy gère le TLS automatiquement et
+   sait router par chemin sur une origine unique, ce qu'exige ADR-005. Écarté :
+   un PaaS (Railway, Render), plus rapide mais qui masque l'exploitation ; et
+   Kubernetes, surdimensionné pour deux process et `concurrency: 1`. Scalingo
+   (hébergeur français annonçant une certification HDS) ne devient pertinent
+   qu'au passage aux vrais courriers, où l'article 9 du RGPD s'applique.
+2. **Une seule image pour le back et le worker**, seule la commande diffère. Même
+   code, même `node_modules`, une surface de build au lieu de deux.
+3. **Pas de CD automatique ce sprint** (décision de cadrage existante).
+   `deploy.sh` fait `git pull --ff-only`, build, `up -d --wait`, puis sonde
+   `https://<domaine>/api/sante`. Le CD reste en roadmap E10.
+4. **Migrations au démarrage du service `back`** (`prisma migrate deploy` avant
+   de servir). Une seule instance, donc pas de course. Le `worker` attend que le
+   `back` soit *healthy* : il ne touche la base qu'une fois le schéma à jour.
+5. **`node_modules` complet dans l'image de runtime**, dépendances de
+   développement comprises. C'est un choix, pas un oubli : `migrate deploy`
+   exige la CLI `prisma` (devDependency) et le chargeur TypeScript qu'elle
+   embarque pour lire `prisma.config.ts`. Un `npm prune --production` casserait
+   les migrations au démarrage.
+
+**Amendement d'ADR-005 — le chemin d'API publié.** ADR-005 annonçait que Caddy
+routerait `/api/*` et `/auth/*` vers le back. C'est inapplicable en l'état : le
+front appelle l'API sur `/api/back/*` en dur (`front/src/lib/config.ts`,
+`BROWSER_API_BASE`), en production comme en développement. Router `/api/*` tel
+quel aurait envoyé `/api/back/api/dossiers` au back **sans retirer le préfixe**,
+soit un 404 sur chaque appel depuis le navigateur.
+
+Le Caddyfile utilise donc `handle_path /api/back/*`, qui retire le préfixe
+exactement comme le rewrite de `next.config.ts` en développement. Conséquence
+utile : le navigateur voit les mêmes chemins dans les deux environnements.
+L'alternative — rendre `BROWSER_API_BASE` dépendante de l'environnement pour
+publier des URL plus propres — touchait le chemin de données de tous les écrans
+d'E1 à E5 pour un gain cosmétique, et introduisait une divergence dev/prod. Elle
+est écartée.
+
+Les exigences de fond d'ADR-005 sont préservées : origine publique unique,
+cookie *host-only* (`path=/`), aucune CORS, `@fastify/cors` toujours inutile
+(constat #9 de l'audit, traité en T8).
+
+**Conséquences.** Vérifié en local sur la pile complète, le 18 septembre 2026 :
+les trois images se construisent, les six services démarrent sains, les 7
+migrations s'appliquent au démarrage, le worker se déclare prêt sur la file,
+Caddy émet son certificat, `/api/sante` renvoie
+`{"status":"ok","db":"ok","redis":"ok"}`, `/api/back/api/dossiers` renvoie 401
+(et non 404 : la preuve que le préfixe est bien retiré), et `http://` redirige
+en 308 vers `https://`.
+
+Deux risques anticipés par le plan n'existaient pas :
+
+- `@capclair/contract` n'apparaît pas comme paquet dans la sortie autonome de
+  Next, mais `transpilePackages` l'inline dans les chunks serveur — vérifié, ses
+  messages FR y sont présents, et le serveur autonome sert `/connexion` en 200.
+- `argon2` v0.44 embarque `prebuilds/linux-x64/argon2.musl.node` : elle ne
+  compile rien à l'installation, donc rien à outiller sur Alpine.
+
+Un piège Windows en revanche était réel : `Dockerfile` et `Caddyfile` n'ont pas
+d'extension et tombaient sous `* text=auto`, donc livrés en CRLF sur un poste
+Windows — une continuation `\` suivie de CRLF casse un `RUN`. Les deux sont
+désormais épinglés en LF dans `.gitattributes`, et `deploy.sh` est en `100755`
+faute de quoi `./deploy.sh` échoue sur le serveur.
+
+**Reste à faire (hors de cette décision).** Provisionner le VPS, poser
+l'enregistrement DNS, dérouler le parcours complet sur le domaine public. Les
+sauvegardes, le durcissement du serveur et le CD restent dans E10.
