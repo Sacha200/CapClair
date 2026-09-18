@@ -22,7 +22,12 @@ import { classifyOrganismeHeuristic } from "../../src/server/ai/prompts.js";
 import { extractPdfText } from "../../src/server/pdf/extract.js";
 import { parseExplicitFrenchDate } from "../../src/lib/dates.js";
 import { env } from "../../src/env.js";
-import { compareByExcerpt, isGrounded } from "./corpus.helpers.js";
+import {
+  compareByExcerpt,
+  compareByExcerptThenTitle,
+  isGrounded,
+  type LabelledExcerpt,
+} from "./corpus.helpers.js";
 import { summarize, writeReport, type PerLetter } from "./report.js";
 
 const CORPUS_DIR = fileURLToPath(new URL("../../../../05-courriers-fictifs/", import.meta.url));
@@ -36,13 +41,19 @@ interface DatasetEntry {
   fichier: string;
   organisme_attendu: string;
   date_courrier?: string | null;
-  actions_attendues?: Array<{ source_excerpt?: string }>;
+  actions_attendues?: Array<{ titre?: string; source_excerpt?: string }>;
   justificatifs_attendus?: Array<{ source_excerpt?: string }>;
   echeance?: { source_excerpt?: string } | null;
 }
 
 const excerpts = (rows?: Array<{ source_excerpt?: string }>): string[] =>
   (rows ?? []).map((r) => r.source_excerpt ?? "").filter((s) => s.length > 0);
+
+/** Les actions se comparent sur l'extrait ET, en repli, sur le titre (étape 8). */
+const labelled = (rows?: Array<{ titre?: string; source_excerpt?: string }>): LabelledExcerpt[] =>
+  (rows ?? [])
+    .map((r) => ({ excerpt: r.source_excerpt ?? "", title: r.titre ?? "" }))
+    .filter((r) => r.excerpt.length > 0);
 
 describe.skipIf(!existsSync(DATASET_PATH))("évaluation du corpus d'analyse", () => {
   it("produit un rapport chiffré sur les 15 courriers", { timeout: 15 * 60_000 }, async () => {
@@ -90,13 +101,19 @@ describe.skipIf(!existsSync(DATASET_PATH))("évaluation du corpus d'analyse", ()
           documentDateProduced: null,
           documentDateCorrect: false,
           actions: {
+            expectedCount: labelled(entry.actions_attendues).length,
+            producedCount: 0,
             matched: 0,
-            missed: excerpts(entry.actions_attendues).length,
+            matchedLenient: 0,
+            missed: labelled(entry.actions_attendues).length,
             extraGrounded: 0,
             ungrounded: 0,
           },
           justificatifs: {
+            expectedCount: excerpts(entry.justificatifs_attendus).length,
+            producedCount: 0,
             matched: 0,
+            matchedLenient: 0,
             missed: excerpts(entry.justificatifs_attendus).length,
             extraGrounded: 0,
             ungrounded: 0,
@@ -106,7 +123,7 @@ describe.skipIf(!existsSync(DATASET_PATH))("évaluation du corpus d'analyse", ()
           informationsTotal: 0,
           latencyMs,
           excerptsAudit: {
-            actionsExpected: excerpts(entry.actions_attendues),
+            actionsExpected: labelled(entry.actions_attendues),
             actionsProduced: [],
             justificatifsExpected: excerpts(entry.justificatifs_attendus),
             justificatifsProduced: [],
@@ -136,9 +153,9 @@ describe.skipIf(!existsSync(DATASET_PATH))("évaluation du corpus d'analyse", ()
           expectedDate !== null &&
           producedDate !== null &&
           expectedDate.getTime() === producedDate.getTime(),
-        actions: compareByExcerpt(
-          excerpts(entry.actions_attendues),
-          result.actions.map((a) => a.sourceExcerpt),
+        actions: compareByExcerptThenTitle(
+          labelled(entry.actions_attendues),
+          result.actions.map((a) => ({ excerpt: a.sourceExcerpt, title: a.title })),
           text,
         ),
         justificatifs: compareByExcerpt(
@@ -155,8 +172,11 @@ describe.skipIf(!existsSync(DATASET_PATH))("évaluation du corpus d'analyse", ()
         informationsTotal: result.informationsExtraites.length,
         latencyMs,
         excerptsAudit: {
-          actionsExpected: excerpts(entry.actions_attendues),
-          actionsProduced: result.actions.map((a) => a.sourceExcerpt),
+          actionsExpected: labelled(entry.actions_attendues),
+          actionsProduced: result.actions.map((a) => ({
+            excerpt: a.sourceExcerpt,
+            title: a.title,
+          })),
           justificatifsExpected: excerpts(entry.justificatifs_attendus),
           justificatifsProduced: result.justificatifs.map((j) => j.sourceExcerpt),
         },

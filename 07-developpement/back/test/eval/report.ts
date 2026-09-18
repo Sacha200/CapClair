@@ -2,6 +2,7 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { join } from "node:path";
+import type { MatchCounts } from "./corpus.helpers.js";
 
 export interface PerLetter {
   id: string;
@@ -12,8 +13,10 @@ export interface PerLetter {
   documentDateExpected: string | null;
   documentDateProduced: string | null;
   documentDateCorrect: boolean;
-  actions: { matched: number; missed: number; extraGrounded: number; ungrounded: number };
-  justificatifs: { matched: number; missed: number; extraGrounded: number; ungrounded: number };
+  /** Appariement en deux passes : extrait, puis titre en repli (étape 8). */
+  actions: MatchCounts;
+  /** Appariement par extrait seul : pour un document nommé, l'extrait suffit. */
+  justificatifs: MatchCounts;
   echeanceExcerptGrounded: boolean | null;
   informationsUngrounded: number;
   informationsTotal: number;
@@ -28,8 +31,8 @@ export interface PerLetter {
    * devrait alors rester local.
    */
   excerptsAudit: {
-    actionsExpected: string[];
-    actionsProduced: string[];
+    actionsExpected: Array<{ excerpt: string; title: string }>;
+    actionsProduced: Array<{ excerpt: string; title: string }>;
     justificatifsExpected: string[];
     justificatifsProduced: string[];
   };
@@ -44,7 +47,10 @@ export interface EvalReport {
     schemaValidRate: number;
     organismeAccuracy: number;
     documentDateAccuracy: number;
+    /** Rappel strict : l'extrait du dataset et celui du modèle se recouvrent. */
     actionRecall: number;
+    /** Rappel souple : extrait OU, à défaut, titre. Voir `corpus.helpers.ts`. */
+    actionRecallLenient: number;
     actionUngroundedRate: number;
     justificatifRecall: number;
     justificatifUngroundedRate: number;
@@ -60,14 +66,13 @@ export function summarize(letters: PerLetter[], model: string): EvalReport {
   const sum = (f: (l: PerLetter) => number) => letters.reduce((a, l) => a + f(l), 0);
   const latencies = letters.map((l) => l.latencyMs).sort((a, b) => a - b);
 
-  const actionsExpected = sum((l) => l.actions.matched + l.actions.missed);
-  const actionsProduced = sum(
-    (l) => l.actions.matched + l.actions.extraGrounded + l.actions.ungrounded,
-  );
-  const justifExpected = sum((l) => l.justificatifs.matched + l.justificatifs.missed);
-  const justifProduced = sum(
-    (l) => l.justificatifs.matched + l.justificatifs.extraGrounded + l.justificatifs.ungrounded,
-  );
+  // Dénominateurs pris sur les tailles de liste, pas reconstitués depuis les
+  // compteurs : `matched + missed` cesse d'égaler l'attendu dès qu'un repli par
+  // titre récupère une action.
+  const actionsExpected = sum((l) => l.actions.expectedCount);
+  const actionsProduced = sum((l) => l.actions.producedCount);
+  const justifExpected = sum((l) => l.justificatifs.expectedCount);
+  const justifProduced = sum((l) => l.justificatifs.producedCount);
 
   return {
     generatedAt: new Date().toISOString(),
@@ -83,6 +88,10 @@ export function summarize(letters: PerLetter[], model: string): EvalReport {
       ),
       actionRecall: ratio(
         sum((l) => l.actions.matched),
+        actionsExpected,
+      ),
+      actionRecallLenient: ratio(
+        sum((l) => l.actions.matchedLenient),
         actionsExpected,
       ),
       actionUngroundedRate: ratio(
@@ -122,7 +131,7 @@ export function writeReport(report: EvalReport): string {
       const org = l.organismeCorrect
         ? "ok"
         : `${l.organismeProduced ?? "null"} au lieu de ${l.organismeExpected}`;
-      const act = `${l.actions.matched}/${l.actions.missed}/${l.actions.ungrounded}`;
+      const act = `${l.actions.matchedLenient}/${l.actions.missed}/${l.actions.ungrounded}`;
       const jus = `${l.justificatifs.matched}/${l.justificatifs.missed}/${l.justificatifs.ungrounded}`;
       return `| ${l.id} | ${l.schemaValid ? "ok" : "ECHEC"} | ${org} | ${l.documentDateCorrect ? "ok" : "ecart"} | ${act} | ${jus} |`;
     })
@@ -137,14 +146,21 @@ Modèle : \`${report.model}\` · ${t.count} courriers · latence médiane ${t.me
 | Réponses conformes au schéma | ${pct(t.schemaValidRate)} |
 | Organisme correct | ${pct(t.organismeAccuracy)} |
 | Date du courrier correcte | ${pct(t.documentDateAccuracy)} |
-| Rappel actions | ${pct(t.actionRecall)} |
+| Rappel actions (extrait seul) | ${pct(t.actionRecall)} |
+| Rappel actions (extrait ou titre) | ${pct(t.actionRecallLenient)} |
 | Actions non ancrées | ${pct(t.actionUngroundedRate)} |
 | Rappel justificatifs | ${pct(t.justificatifRecall)} |
 | Justificatifs non ancrés | ${pct(t.justificatifUngroundedRate)} |
 | Informations non ancrées | ${pct(t.informationUngroundedRate)} |
 
+Deux rappels d'actions sont publiés. Le strict exige que l'extrait du dataset et
+celui du modèle se recouvrent ; il sous-estime le rappel réel, parce que le
+dataset et le modèle peuvent ancrer la même consigne sur deux phrases
+différentes du courrier. Le souple accepte en repli un recouvrement de mots
+significatifs entre titres. Le détail par courrier ci-dessous utilise le souple.
+
 « Non ancré » = \`sourceExcerpt\` absent du texte extrait du PDF. C'est le seul
-indicateur objectif d'invention. « Hors référentiel » (ancré mais absent du
+indicateur objectif d'invention, et il ne dépend d'aucun appariement. « Hors référentiel » (ancré mais absent du
 dataset) est consultable par courrier dans le JSON et n'est pas un défaut : le
 dataset peut être incomplet.
 
