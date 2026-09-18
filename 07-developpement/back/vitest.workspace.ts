@@ -24,7 +24,9 @@ export default defineWorkspace([
   {
     test: {
       name: "unit",
-      include: ["src/**/*.test.ts"],
+      // `test/eval/**` : les tests du harnais d'évaluation lui-même (audit T1),
+      // gratuits et sans réseau. Le harnais facturé est en `*.eval.ts`, projet `eval`.
+      include: ["src/**/*.test.ts", "test/eval/**/*.test.ts"],
       environment: "node",
       env: unitEnv,
     },
